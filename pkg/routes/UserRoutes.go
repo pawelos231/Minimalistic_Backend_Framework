@@ -8,5 +8,6 @@ import (
 
 func UserRoutes(r *mux.Router) *mux.Router {
 	r.HandleFunc("/handler", ControllersArk.TestHandler())
+	r.HandleFunc("/register", ControllersArk.RegisterHandler())
 	return r
 }
