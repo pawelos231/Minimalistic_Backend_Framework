@@ -9,6 +9,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const PORT = ":8081"
+
 func main() {
 	router := mux.NewRouter()
 	http.Handle("/", RoutesArk.UserRoutes(router))
