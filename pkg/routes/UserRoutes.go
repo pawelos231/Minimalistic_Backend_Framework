@@ -7,7 +7,7 @@ import (
 )
 
 func UserRoutes(r *mux.Router) *mux.Router {
-	r.HandleFunc("/handler", ControllersArk.TestHandler())
+	r.HandleFunc("/stats", ControllersArk.FindBestPlayers())
 	r.HandleFunc("/register", ControllersArk.RegisterHandler())
 	r.HandleFunc("/login", ControllersArk.LoginHandler())
 	return r
