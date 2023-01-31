@@ -1,10 +1,11 @@
 import { initServer } from "./server"
-import { getStatsData } from "./controllers/gameData"
-import { GET_STATS } from "./consts/routes"
-const app = initServer()
+import { getStatsData, sendStatsData } from "./controllers/gameData"
+import { STATS } from "./consts/routes"
+import { Server } from "./interfaces/serverInterface"
+const app: Server = initServer()
 
-app.get(GET_STATS, getStatsData)
-
+app.get(STATS, getStatsData)
+app.post(STATS, sendStatsData)
 
 
 

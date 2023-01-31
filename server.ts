@@ -1,8 +1,7 @@
-import fs from 'fs'
 import http from 'http'
-import { getStatsData } from './controllers/gameData'
 import { parseUrl } from './helpers/urlParser'
 import { Server } from './interfaces/serverInterface'
+import { AllowCors } from './middleware/cors'
 let routes: any = []
 
 function bodyReader(req: http.IncomingMessage): Promise<string> {
@@ -28,15 +27,13 @@ export const initServer = (): Server => {
         for (const key of keyRoutes) {
             console.log(key)
             const parsedRoute: string = parseUrl(key)
-            if (new RegExp(parsedRoute).test(req.url) && routes[key][req.method.toLowerCase()]) {
-
+            const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[key][req.method.toLowerCase()]
+            if (urlMatchesMethodCorrect) {
                 const handler = routes[key][req.method.toLowerCase()]
                 const matcher = req.url.match(new RegExp(parsedRoute))
                 req.params = matcher.groups
                 req.body = await bodyReader(req)
-                res.setHeader('Access-Control-Allow-Origin', "*")
-                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-                res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+                AllowCors(res)
                 handler(req, res)
                 match = true
                 break;

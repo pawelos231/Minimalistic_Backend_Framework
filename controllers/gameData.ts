@@ -4,3 +4,8 @@ export const getStatsData = (req: http.IncomingMessage, res: http.ServerResponse
     res.write(temporary)
     res.end()
 }
+
+export const sendStatsData = (req: any, res: http.ServerResponse<http.IncomingMessage>) => {
+    res.write(JSON.stringify(req.body))
+    res.end()
+}

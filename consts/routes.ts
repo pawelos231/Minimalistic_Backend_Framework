@@ -1,1 +1,1 @@
-export const GET_STATS = "/stats"
+export const STATS = "/stats"
