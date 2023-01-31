@@ -1,0 +1,23 @@
+{
+  "name": "arkanoid_backend",
+  "version": "1.0.0",
+  "description": "Backend for Arkanoid Game  \r It will contain controllers for login and register as well as controllers to manage stats and scores for each player, the database will be created in SQL",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pawelos231/Arkanoid_Backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pawelos231/Arkanoid_Backend/issues"
+  },
+  "homepage": "https://github.com/pawelos231/Arkanoid_Backend#readme",
+  "dependencies": {
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1"
+  }
+}
