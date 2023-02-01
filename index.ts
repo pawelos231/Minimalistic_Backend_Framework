@@ -4,7 +4,14 @@ import { STATS } from "./consts/routes"
 import { Server } from "./interfaces/serverInterface"
 const app: Server = initServer()
 
-app.get(STATS, getStatsData)
+const auth = () => {
+    console.log(1)
+}
+const auth2 = () => {
+    console.log(2)
+}
+
+app.get(STATS, getStatsData, [auth, auth2])
 app.post(STATS, sendStatsData)
 
 
