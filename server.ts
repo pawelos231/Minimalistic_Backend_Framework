@@ -2,9 +2,10 @@ import http from 'http'
 import { parseUrl } from './helpers/urlParser'
 import { Server } from './interfaces/serverInterface'
 import { AllowCors } from './middleware/cors'
-let routes: any = []
 import { flatten2DArray } from './helpers/flatten'
+import { NOT_FOUND } from './consts/statusCodes'
 
+let routes: any = []
 function bodyReader(req: http.IncomingMessage): Promise<string> {
     return new Promise((resolve, reject) => {
         let body: string = ""
@@ -21,42 +22,55 @@ function bodyReader(req: http.IncomingMessage): Promise<string> {
 
 }
 
-export const initServer = (): Server => {
+export const initServer = (): Server<Function & any[]> => {
     const server = http.createServer(async (req: any, res: http.ServerResponse) => {
         const keyRoutes: string[] = Object.keys(routes)
         let match: boolean = false
         for (const key of keyRoutes) {
             const parsedRoute: string = parseUrl(key)
+
             const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[key][req.method.toLowerCase()]
 
             if (urlMatchesMethodCorrect) {
                 const handler: Function = routes[key][req.method.toLowerCase()]
+                const middleware: Function[] = routes[key]["middleware"]
+                const queue: any = []
+                if (middleware) {
+                    for (const [key, func] of middleware.entries()) {
+                        queue.push(func)
+                    }
+                }
+                console.log(queue, "queue")
                 const matcher = req.url.match(new RegExp(parsedRoute))
                 req.params = matcher.groups
                 req.body = await bodyReader(req)
                 AllowCors(res)
-                const stack = []
+
                 handler(req, res)
                 match = true
                 break;
             }
         }
+
         if (!match) {
-            res.statusCode = 404;
+            res.statusCode = NOT_FOUND;
             res.end("Not found");
         }
+
         res.end()
     })
     server.listen(3002, () => {
         console.log("listening on port 3002")
     })
+
     return {
         get<T>(path: string, handler: Function, ...middleware: Array<T[]>): void {
-            const flattenedMiddleware: T[] = flatten2DArray<T>(middleware)
-            if (flattenedMiddleware.length === 0) {
-                routes[path] = { "post": handler }
+            const flattenedMiddleware: T[] = flatten2DArray<T>(middleware).filter((item: T) => typeof item === "function")
+
+            if (flattenedMiddleware.length > 0) {
+                routes[path] = { "get": handler, "middleware": flattenedMiddleware, "gówno": "nie" }
             } else {
-                routes[path] = { "post": handler, "middleware": middleware }
+                routes[path] = { "get": handler }
             }
         },
         post(path: string, handler: Function): void {
