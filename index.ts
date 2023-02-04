@@ -1,12 +1,13 @@
 import { initServer } from "./server"
 import { getStatsData, sendStatsData } from "./controllers/gameData"
 import { GET_STATS, POST_STATS } from "./consts/routes"
-import http from 'http'
 import { Server } from "./interfaces/serverInterface"
+import http from 'http'
 import fs from "fs"
 const app: Server<Function & any> = initServer()
-const auth = () => {
-    console.log(1)
+const auth = (req: any, res: http.ServerResponse) => {
+    req.chuj = { "nie": 1 }
+    console.log("WITAM Z AUTH MIDDLEWARE")
 }
 const auth2 = () => {
     console.log(2)

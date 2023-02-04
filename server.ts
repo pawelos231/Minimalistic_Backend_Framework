@@ -4,6 +4,9 @@ import { Server } from './interfaces/serverInterface'
 import { AllowCors } from './middleware/cors'
 import { flatten2DArray } from './helpers/flatten'
 import { NOT_FOUND } from './consts/statusCodes'
+import { processMiddleware } from './middleware/process'
+
+const MIDDLEWARE = "middleware"
 
 let routes: any = []
 function bodyReader(req: http.IncomingMessage): Promise<string> {
@@ -26,27 +29,33 @@ export const initServer = (): Server<Function & any[]> => {
     const server = http.createServer(async (req: any, res: http.ServerResponse) => {
         const keyRoutes: string[] = Object.keys(routes)
         let match: boolean = false
-        for (const key of keyRoutes) {
-            const parsedRoute: string = parseUrl(key)
 
-            const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[key][req.method.toLowerCase()]
+        for (const key of keyRoutes) {
+
+            const parsedRoute: string = parseUrl(key)
+            const requestMethod: string = req.method.toLowerCase()
+            const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[key][requestMethod]
 
             if (urlMatchesMethodCorrect) {
-                const handler: Function = routes[key][req.method.toLowerCase()]
-                const middleware: Function[] = routes[key]["middleware"]
+                const handler: Function = routes[key][requestMethod]
+                const middleware: Function[] = routes[key][MIDDLEWARE]
                 const queue: any = []
                 if (middleware) {
                     for (const [key, func] of middleware.entries()) {
+                        processMiddleware(func, req, res)
+                        console.log(req.chuj)
                         queue.push(func)
                     }
                 }
                 console.log(queue, "queue")
+
                 const matcher = req.url.match(new RegExp(parsedRoute))
                 req.params = matcher.groups
                 req.body = await bodyReader(req)
-                AllowCors(res)
 
+                AllowCors(res)
                 handler(req, res)
+
                 match = true
                 break;
             }
@@ -66,9 +75,9 @@ export const initServer = (): Server<Function & any[]> => {
     return {
         get<T>(path: string, handler: Function, ...middleware: Array<T[]>): void {
             const flattenedMiddleware: T[] = flatten2DArray<T>(middleware).filter((item: T) => typeof item === "function")
-
+            console.log(flattenedMiddleware)
             if (flattenedMiddleware.length > 0) {
-                routes[path] = { "get": handler, "middleware": flattenedMiddleware, "gówno": "nie" }
+                routes[path] = { "get": handler, "middleware": flattenedMiddleware }
             } else {
                 routes[path] = { "get": handler }
             }
