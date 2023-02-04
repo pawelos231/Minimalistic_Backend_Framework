@@ -40,10 +40,10 @@ export const initServer = (): Server<Function & any[]> => {
             if (urlMatchesMethodCorrect) {
                 const handler: Function = routes[key][requestMethod]
                 const middleware: Function[] = routes[key][MIDDLEWARE]
+
                 if (middleware) {
                     for (const [key, func] of middleware.entries()) {
                         processMiddleware(func, req, res)
-                        console.log(req.chuj)
                     }
                 }
 

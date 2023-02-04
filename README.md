@@ -9,8 +9,8 @@ To create api route with handler and some middleware you would need to create an
  const app: Server<Function & any> = initServer()
     
     const auth2 = (req: any, res: http.ServerResponse) => {
-    req.example = "example"
-    console.log("middleware")
+        req.example = "example"
+        console.log("middleware")
     }
     app.get("/someRoute/:id", function(req, res) {
         console.log("controller")
