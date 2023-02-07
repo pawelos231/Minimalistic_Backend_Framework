@@ -8,8 +8,8 @@ import { NOT_FOUND } from './consts/statusCodes'
 import { processMiddleware } from './middleware/process'
 
 const MIDDLEWARE = "middleware"
+const routes: any = []
 
-let routes: any = []
 function bodyReader(req: http.IncomingMessage): Promise<string> {
     return new Promise((resolve, reject) => {
         let body: string = ""
@@ -32,7 +32,6 @@ export const initServer = (): Server<Function & any[]> => {
         let match: boolean = false
 
         for (const key of keyRoutes) {
-
             const parsedRoute: string = parseUrl(key)
             const requestMethod: string = req.method.toLowerCase()
             const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[key][requestMethod]
@@ -40,7 +39,7 @@ export const initServer = (): Server<Function & any[]> => {
             if (urlMatchesMethodCorrect) {
                 const handler: Function = routes[key][requestMethod]
                 const middleware: Function[] = routes[key][MIDDLEWARE]
-
+                console.log(handler)
                 if (middleware) {
                     for (const [key, func] of middleware.entries()) {
                         processMiddleware(func, req, res)
@@ -61,7 +60,10 @@ export const initServer = (): Server<Function & any[]> => {
 
         if (!match) {
             res.statusCode = NOT_FOUND;
-            res.end("not found")
+            const file: string = fs.readFileSync("./404.html", {
+                encoding: "utf-8"
+            })
+            res.end(file)
         }
 
         res.end()
@@ -71,26 +73,50 @@ export const initServer = (): Server<Function & any[]> => {
     })
 
     return {
-        get<T>(path: string, handler: Function, ...middleware: Array<T[]>): void {
-            const flattenedMiddleware: T[] = flatten2DArray<T>(middleware).filter((item: T) => typeof item === "function")
+        get(path: string, handler: Function, ...middleware: Array<Function[]>): void {
+            const flattenedMiddleware: Function[] = flatten2DArray(middleware)
             console.log(flattenedMiddleware)
             if (flattenedMiddleware.length > 0) {
-                routes[path] = { "get": handler, "middleware": flattenedMiddleware }
+                routes[path] = { "get": handler, MIDDLEWARE: flattenedMiddleware }
             } else {
                 routes[path] = { "get": handler }
             }
         },
-        post(path: string, handler: Function): void {
-            routes[path] = { "post": handler }
+        post(path: string, handler: Function, ...middleware: Array<Function[]>): void {
+            const flattenedMiddleware = flatten2DArray(middleware)
+
+            if (flattenedMiddleware.length > 0) {
+                routes[path] = { "post": handler, MIDDLEWARE: flattenedMiddleware }
+            } else {
+                routes[path] = { "post": handler }
+            }
         },
-        patch(path: string, handler: Function): void {
-            routes[path] = { "patch": handler }
+        patch(path: string, handler: Function, ...middleware: Array<Function[]>): void {
+            const flattenedMiddleware = flatten2DArray(middleware)
+
+            if (flattenedMiddleware.length > 0) {
+                routes[path] = { "patch": handler, MIDDLEWARE: flattenedMiddleware }
+            } else {
+                routes[path] = { "patch": handler }
+            }
         },
-        put(path: string, handler: Function): void {
-            routes[path] = { "put": handler }
+        put(path: string, handler: Function, ...middleware: Array<Function[]>): void {
+            const flattenedMiddleware = flatten2DArray(middleware)
+
+            if (flattenedMiddleware.length > 0) {
+                routes[path] = { "put": handler, MIDDLEWARE: flattenedMiddleware }
+            } else {
+                routes[path] = { "put": handler }
+            }
         },
-        delete(path: string, handler: Function): void {
-            routes[path] = { "delete": handler }
+        delete(path: string, handler: Function, ...middleware: Array<Function[]>): void {
+            const flattenedMiddleware = flatten2DArray(middleware)
+
+            if (flattenedMiddleware.length > 0) {
+                routes[path] = { "delete": handler, MIDDLEWARE: flattenedMiddleware }
+            } else {
+                routes[path] = { "delete": handler }
+            }
         },
     }
 }
