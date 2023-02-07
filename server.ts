@@ -4,7 +4,7 @@ import { parseUrl } from './helpers/urlParser'
 import { Server } from './interfaces/serverInterface'
 import { AllowCors } from './middleware/cors'
 import { flatten2DArray } from './helpers/flatten'
-import { NOT_FOUND } from './consts/statusCodes'
+import { NOT_FOUND } from './constants/statusCodes'
 import { processMiddleware } from './middleware/process'
 
 const MIDDLEWARE = "middleware"
@@ -60,7 +60,7 @@ export const initServer = (): Server<Function & any[]> => {
 
         if (!match) {
             res.statusCode = NOT_FOUND;
-            const file: string = fs.readFileSync("./404.html", {
+            const file: string = fs.readFileSync("./views/404.html", {
                 encoding: "utf-8"
             })
             res.end(file)
@@ -83,7 +83,7 @@ export const initServer = (): Server<Function & any[]> => {
             }
         },
         post(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware = flatten2DArray(middleware)
+            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
 
             if (flattenedMiddleware.length > 0) {
                 routes[path] = { "post": handler, MIDDLEWARE: flattenedMiddleware }
@@ -92,7 +92,7 @@ export const initServer = (): Server<Function & any[]> => {
             }
         },
         patch(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware = flatten2DArray(middleware)
+            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
 
             if (flattenedMiddleware.length > 0) {
                 routes[path] = { "patch": handler, MIDDLEWARE: flattenedMiddleware }
@@ -101,7 +101,7 @@ export const initServer = (): Server<Function & any[]> => {
             }
         },
         put(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware = flatten2DArray(middleware)
+            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
 
             if (flattenedMiddleware.length > 0) {
                 routes[path] = { "put": handler, MIDDLEWARE: flattenedMiddleware }
@@ -110,7 +110,7 @@ export const initServer = (): Server<Function & any[]> => {
             }
         },
         delete(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware = flatten2DArray(middleware)
+            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
 
             if (flattenedMiddleware.length > 0) {
                 routes[path] = { "delete": handler, MIDDLEWARE: flattenedMiddleware }

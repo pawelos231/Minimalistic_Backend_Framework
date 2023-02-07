@@ -1,6 +1,6 @@
 import { initServer } from "./server"
 import { getStatsData, sendStatsData } from "./controllers/gameData"
-import { GET_STATS, POST_STATS } from "./consts/routes"
+import { GET_STATS, POST_STATS } from "./constants/routes"
 import { Server } from "./interfaces/serverInterface"
 import http from 'http'
 import fs from "fs"
@@ -14,7 +14,7 @@ const auth2 = (req: any, res: http.ServerResponse) => {
 app.post(POST_STATS, sendStatsData)
 
 app.get("/nie",(req: any, res: http.ServerResponse) => {
-    const file = fs.readFileSync("./index.html", {
+    const file = fs.readFileSync("./views/index.html", {
         encoding: "utf-8"
     })
     res.write(file)
