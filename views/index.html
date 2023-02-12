@@ -1,30 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NIEEEEEEE</title>
-</head>
-<body>
+  </head>
+  <body>
     <button>Wyślij</button>
-    <button class="fds">2</button>
+    <button class="fds">levele</button>
     <h1>SDIEMAAAAAAAAAA</h1>
     <script>
-     
-        document.querySelector("button").addEventListener("click", async () => {
-            const data = await fetch("http://localhost:3002/postStats", {
-                method: "POST",
-                body: JSON.stringify("sdfaklnfsdhjgfhdsjgb")
-            })
-            console.log(await data.json())
-        })
-        
-        document.querySelector(".fds").addEventListener("click", async () => {
-            const data = await fetch("http://localhost:3002/getStats")
-            console.log(await data.json())
-        })
-    </script>
+      document.querySelector("button").addEventListener("click", async () => {
+        const data = await fetch("http://localhost:3002/postStats", {
+          method: "POST",
+          body: JSON.stringify("sdfaklnfsdhjgfhdsjgb"),
+        });
+        console.log(await data.json());
+      });
 
-</body>
+      document.querySelector(".fds").addEventListener("click", async () => {
+        const data = await fetch("http://localhost:3002/getLevelData").then(
+          (res) => console.log(res.json())
+        );
+        console.log(data);
+      });
+    </script>
+  </body>
 </html>

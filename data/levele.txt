@@ -1,0 +1,3 @@
+level: 1, numberOfRows: 3, numberOfColumns: 10, lives: 3, timer: 600
+level: 2, numberOfRows: 4, numberOfColumns: 12, lives: 4, timer: 500
+level: 3, numberOfRows: 4, numberOfColumns: 14, lives: 3, timer: 400
