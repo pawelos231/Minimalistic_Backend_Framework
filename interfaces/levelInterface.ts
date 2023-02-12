@@ -1,6 +1,6 @@
 export interface LevelData {
     numberOfRows: number
-    numberOfColums: number
+    numberOfColumns: number
     lives: number
     level: number
     timer: number
