@@ -18,12 +18,11 @@
         });
         console.log(await data.json());
       });
-
       document.querySelector(".fds").addEventListener("click", async () => {
-        const data = await fetch("http://localhost:3002/getLevelData").then(
-          (res) => console.log(res.json())
-        );
-        console.log(data);
+        const data = await fetch("http://localhost:3002/getLevelData", {
+          method: "GET",
+        });
+        console.log(await data.json());
       });
     </script>
   </body>

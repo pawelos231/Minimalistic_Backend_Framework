@@ -1,7 +1,6 @@
 import { initServer } from "./server"
-import { getStatsData, sendStatsData } from "./controllers/gameData"
+import { getStatsData, sendStatsData, getLevelData } from "./controllers/gameData"
 import { GET_STATS, POST_STATS, GET_LEVELS } from "./constants/routes"
-import { getLevelData } from "./controllers/Levels"
 import { Server } from "./interfaces/serverInterface"
 import http from 'http'
 import fs from "fs"
@@ -11,8 +10,7 @@ const auth2 = (req: any, res: http.ServerResponse) => {
     req.example = "example"
     console.log(2)
 }
-//app.get(GET_STATS, getStatsData, [auth2])
-
+app.get(GET_STATS, getStatsData, [auth2])
 app.get(GET_LEVELS, getLevelData)
 app.post(POST_STATS, sendStatsData)
 
