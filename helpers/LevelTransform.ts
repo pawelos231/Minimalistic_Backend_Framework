@@ -27,6 +27,6 @@ export const levelTransform = async (): Promise<void> => {
             fs.createWriteStream("./data/formattedLevels.txt")
         ) 
     }  catch(err){
-        console.log("WYJEBAŁO ERRROR")
+        console.log("wysypało error")
     }
 }
