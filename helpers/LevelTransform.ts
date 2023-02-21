@@ -1,12 +1,12 @@
 import fs from 'fs'
-import {Transform} from 'stream'
-import {pipeline} from 'stream/promises'
+import { Transform } from 'stream'
+import { pipeline } from 'stream/promises'
 import { LevelData } from '../interfaces/levelInterface'
 
 export const levelTransform = async (): Promise<void> => {
     const TransformText: Transform = new Transform({
         objectMode: true,
-        transform(chunk: string, enc: BufferEncoding, callback){
+        transform(chunk: string, enc: BufferEncoding, callback) {
             const transformedData: LevelData[] = chunk.split(/\r?\n/).map((item: string) => item.split(",")).map((item: string[]) => {
                 const tempObj: any = {}
                 item.forEach((item: string) => {
@@ -18,15 +18,15 @@ export const levelTransform = async (): Promise<void> => {
             callback(null, JSON.stringify(transformedData))
         },
     })
-    try{
+    try {
         await pipeline(
             fs.createReadStream("./data/levele.txt", {
                 encoding: "utf-8"
             }),
             TransformText,
             fs.createWriteStream("./data/formattedLevels.txt")
-        ) 
-    }  catch(err){
+        )
+    } catch (err: any) {
         console.log("wysypało error")
     }
 }
