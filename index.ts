@@ -5,7 +5,7 @@ import { Server } from "./interfaces/serverInterface"
 import http from 'http'
 import fs from "fs"
 
-const app: Server<Function & any> = initServer()
+const app: Server<Function> = initServer()
 const auth2 = (req: any, res: http.ServerResponse): void => {
     req.example = "example"
     console.log(2)

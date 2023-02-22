@@ -1,5 +1,6 @@
 import http from 'http'
 import fs from 'fs'
+import path from 'path'
 import { parseUrl } from './helpers/urlParser'
 import { Server } from './interfaces/serverInterface'
 import { AllowCors } from './middleware/cors'
@@ -26,19 +27,19 @@ function bodyReader(req: http.IncomingMessage): Promise<string> {
 
 }
 
-export const initServer = (): Server<Function & any[]> => {
+export const initServer = (): Server<Function> => {
     const server = http.createServer(async (req: any, res: http.ServerResponse) => {
         const keyRoutes: string[] = Object.keys(routes)
         let match: boolean = false
 
-        for (const key of keyRoutes) {
-            const parsedRoute: string = parseUrl(key)
+        for (const ROUTE of keyRoutes) {
+            const parsedRoute: string = parseUrl(ROUTE)
             const requestMethod: string = req.method.toLowerCase()
-            const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[key][requestMethod]
+            const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[ROUTE][requestMethod]
 
             if (urlMatchesMethodCorrect) {
-                const handler: Function = routes[key][requestMethod]
-                const middleware: Function[] = routes[key][MIDDLEWARE]
+                const handler: Function = routes[ROUTE][requestMethod]
+                const middleware: Function[] = routes[ROUTE][MIDDLEWARE]
                 if (middleware) {
                     for (const [key, func] of middleware.entries()) {
                         processMiddleware(func, req, res)
@@ -59,7 +60,7 @@ export const initServer = (): Server<Function & any[]> => {
 
         if (!match) {
             res.statusCode = NOT_FOUND;
-            const file: string = fs.readFileSync("./views/404.html", {
+            const file: string = fs.readFileSync(path.resolve(__dirname, 'views', '404.html'), {
                 encoding: "utf-8"
             })
             res.end(file)
