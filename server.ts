@@ -11,6 +11,22 @@ import { processMiddleware } from './middleware/process'
 const MIDDLEWARE = "middleware"
 const routes: any = []
 
+const BindFuncsToRoutes = (
+    method: string, 
+    path:string,  
+    handler: Function, 
+    middleware: Function[] | null = null): void => 
+    {
+        if(typeof handler !== "function"){
+            throw new Error("handler must be a func")
+        }
+        if (middleware && middleware.length > 0) {
+            routes[path] = { [method]: handler, MIDDLEWARE: middleware }
+        } else {
+            routes[path] = { [method]: handler }
+        }
+    }
+
 function bodyReader(req: http.IncomingMessage): Promise<string> {
     return new Promise((resolve, reject) => {
         let body: string = ""
@@ -74,49 +90,20 @@ export const initServer = (): Server<Function> => {
 
     return {
         get(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware: Function[] = flatten2DArray(middleware)
-            console.log(flattenedMiddleware)
-            if (flattenedMiddleware.length > 0) {
-                routes[path] = { "get": handler, MIDDLEWARE: flattenedMiddleware }
-            } else {
-                routes[path] = { "get": handler }
-            }
+            BindFuncsToRoutes("get", path, handler, flatten2DArray(middleware))
         },
         post(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
-
-            if (flattenedMiddleware.length > 0) {
-                routes[path] = { "post": handler, MIDDLEWARE: flattenedMiddleware }
-            } else {
-                routes[path] = { "post": handler }
-            }
+            BindFuncsToRoutes("post", path, handler, flatten2DArray(middleware))
+            
         },
         patch(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
-
-            if (flattenedMiddleware.length > 0) {
-                routes[path] = { "patch": handler, MIDDLEWARE: flattenedMiddleware }
-            } else {
-                routes[path] = { "patch": handler }
-            }
+            BindFuncsToRoutes("patch", path, handler, flatten2DArray(middleware))
         },
         put(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
-
-            if (flattenedMiddleware.length > 0) {
-                routes[path] = { "put": handler, MIDDLEWARE: flattenedMiddleware }
-            } else {
-                routes[path] = { "put": handler }
-            }
+            BindFuncsToRoutes("put", path, handler, flatten2DArray(middleware))
         },
         delete(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-            const flattenedMiddleware: Function[]  = flatten2DArray(middleware)
-
-            if (flattenedMiddleware.length > 0) {
-                routes[path] = { "delete": handler, MIDDLEWARE: flattenedMiddleware }
-            } else {
-                routes[path] = { "delete": handler }
-            }
+            BindFuncsToRoutes("delete", path, handler, flatten2DArray(middleware))
         },
     }
 }
