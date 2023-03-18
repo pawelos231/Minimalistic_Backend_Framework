@@ -5,10 +5,9 @@ import { Server } from "./interfaces/serverInterface"
 import http from 'http'
 import fs from "fs"
 
-const app: Server<Function> = initServer()
+const app: Server = initServer()
 const auth2 = (req: any, res: http.ServerResponse): void => {
     req.example = "example"
-    console.log(2)
 }
 app.get(GET_STATS, getStatsData, [auth2])
 app.get(GET_LEVELS, getLevelData)

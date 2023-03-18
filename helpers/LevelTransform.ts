@@ -4,6 +4,7 @@ import { pipeline } from 'stream/promises'
 import { LevelData } from '../interfaces/levelInterface'
 
 export const levelTransform = async (): Promise<void> => {
+
     const TransformText: Transform = new Transform({
         objectMode: true,
         transform(chunk: string, enc: BufferEncoding, callback) {
@@ -18,6 +19,7 @@ export const levelTransform = async (): Promise<void> => {
             callback(null, JSON.stringify(transformedData))
         },
     })
+
     try {
         await pipeline(
             fs.createReadStream("./data/levele.txt", {
@@ -26,7 +28,8 @@ export const levelTransform = async (): Promise<void> => {
             TransformText,
             fs.createWriteStream("./data/formattedLevels.txt")
         )
-    } catch (err: any) {
+    } 
+    catch (err: any) {
         console.log("wysypało error")
     }
 }

@@ -27,7 +27,7 @@ const BindFuncsToRoutes = (
         }
     }
 
-function bodyReader(req: http.IncomingMessage): Promise<string> {
+const bodyReader = (req: http.IncomingMessage): Promise<string> => {
     return new Promise((resolve, reject) => {
         let body: string = ""
         req.on("data", (chunk: Buffer): void => {
@@ -43,14 +43,16 @@ function bodyReader(req: http.IncomingMessage): Promise<string> {
 
 }
 
-export const initServer = (): Server<Function> => {
+export const initServer = (): Server => {
     const server = http.createServer(async (req: any, res: http.ServerResponse) => {
         const keyRoutes: string[] = Object.keys(routes)
         let match: boolean = false
 
         for (const ROUTE of keyRoutes) {
+
             const parsedRoute: string = parseUrl(ROUTE)
             const requestMethod: string = req.method.toLowerCase()
+
             const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && routes[ROUTE][requestMethod]
 
             if (urlMatchesMethodCorrect) {

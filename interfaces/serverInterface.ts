@@ -1,8 +1,8 @@
-export interface Server<T> {
-    get: (path: string, handler: Function, ...middleware: T[][]) => void
-    put: (path: string, handler: Function, ...middleware: T[][]) => void
-    patch: (path: string, handler: Function, ...middleware: T[][]) => void
-    delete: (path: string, handler: Function, ...middleware: T[][]) => void
-    post: (path: string, handler: Function, ...middleware: T[][]) => void
+export interface Server {
+    get: (path: string, handler: Function, ...middleware: Function[][]) => void
+    put: (path: string, handler: Function, ...middleware: Function[][]) => void
+    patch: (path: string, handler: Function, ...middleware: Function[][]) => void
+    delete: (path: string, handler: Function, ...middleware: Function[][]) => void
+    post: (path: string, handler: Function, ...middleware: Function[][]) => void
 }
 
