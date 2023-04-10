@@ -64,16 +64,18 @@ export class Server implements ServerInterface {
         })
     }
 
-    ProvideFileServerFunctions(req: any, res: http.ServerResponse){
+    ProvideFileServerFunctions(req: any, res: http.ServerResponse): void{
 
         const extension: string = path.extname(req.url).slice(1);
         let type = "";
+        
             
         (extension in TYPES) ? 
         type = TYPES[extension as keyof typeof TYPES] : 
         type = TYPES.html
       
         const supportedExtension = Boolean(type);
+        console.log(fs.existsSync(path.join(root, "/SongsImages")))
 
         if (!supportedExtension) {
             res.writeHead(404, { 'Content-Type': 'text/html' });
@@ -115,11 +117,14 @@ export class Server implements ServerInterface {
     initServer(): MethodsHandler {
         const server = http.createServer(async (req: any, res: http.ServerResponse) => {
 
-       
+            this.ProvideFileServerFunctions(req, res)
+
             const keyRoutes: string[] = Object.keys(this.routes)
             let match: boolean = false
     
             for (const ROUTE of keyRoutes) {
+
+                
     
                 const parsedRoute: string = parseUrl(ROUTE)
                 const requestMethod: string = req.method.toLowerCase()

@@ -1,5 +1,10 @@
 # API for Arkanoid Game with custom framework
 
+<p align='center'>
+<br>
+<i><b>[🚧 Work in progress! 🚧]</b></i>
+</p>
+
 Backend for my Arkanoid game written in pure node.js that i built framework upon, the main idea for creating this small framework was to avoid overhead that frameworks like [epxress](https://expressjs.com/en/api.html) provides, it was also a very nice learning experience, framework supports all the main features like: request handling, middleware, dynamic routes.
 
 ## Reference
@@ -22,6 +27,8 @@ app.get(
   [auth]
 );
 ```
+
+server can also serve static files via controllers with special attributes
 
 ## About game
 
