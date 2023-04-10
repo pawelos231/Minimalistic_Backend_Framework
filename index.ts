@@ -1,11 +1,13 @@
-import { initServer } from "./server"
+import { Server } from "./server"
 import { getStatsData, sendStatsData, getLevelData } from "./controllers/gameData"
 import { GET_STATS, POST_STATS, GET_LEVELS } from "./constants/routes"
-import { Server } from "./interfaces/serverInterface"
+import { MethodsHandler } from "./interfaces/serverInterface"
 import http from 'http'
 import fs from "fs"
 
-const app: Server = initServer()
+const ServerInstance: Server = new Server()
+const app: MethodsHandler = ServerInstance.initServer()
+
 const auth2 = (req: any, res: http.ServerResponse): void => {
     req.example = "example"
 }

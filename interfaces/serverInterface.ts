@@ -1,4 +1,4 @@
-export interface Server {
+export interface MethodsHandler {
     get: (path: string, handler: Function, ...middleware: Function[][]) => void
     put: (path: string, handler: Function, ...middleware: Function[][]) => void
     patch: (path: string, handler: Function, ...middleware: Function[][]) => void
@@ -6,3 +6,6 @@ export interface Server {
     post: (path: string, handler: Function, ...middleware: Function[][]) => void
 }
 
+export interface ServerInterface {
+    initServer: () => MethodsHandler
+}
