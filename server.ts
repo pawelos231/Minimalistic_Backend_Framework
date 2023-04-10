@@ -68,7 +68,7 @@ export class Server implements ServerInterface {
     }
 
 
-    static(req: any, res: http.ServerResponse, pathToPropagate = "public"): void{
+    private async propagateStatic(req: any, res: http.ServerResponse, pathToPropagate = "public"): Promise<void>{
 
         const directoryName: string = pathToPropagate;  
         const root: string = path.normalize(path.resolve(directoryName));
@@ -103,15 +103,46 @@ export class Server implements ServerInterface {
             }
           }
           
-      
-        const filePath = path.join(root, req.url)
-        const image = sharp(filePath);
-        image.resize(200, 200).toBuffer((err: any, buffer: any) => {
-            res.setHeader('Content-Type', 'image/jpeg');
-            res.end(buffer);
-        });
+
+   
+        if (fs.existsSync(path.join(root, req.url)) && !extension) {
+
+            const files = fs.readdirSync(path.join(root, req.url));
+            let tempTab: Promise<unknown>[] = []
+
+               
+                files.forEach((item: string) => {
+
+                    const promise: Promise<unknown> = new Promise((resolve, reject) => {
+                        const filePath: string = path.join(root, req.url, item);
+                        const image = sharp(filePath, {concurrency: 4});
+                        image.resize(100, 100).toBuffer((err: any, buffer: any) => {
+                            resolve(buffer)
+                            if(err){
+                                reject(err)
+                            }
+                        });
+                    })
+                    tempTab.push(promise)
+                });
+
+                res.writeHead(200, {'Content-Type': 'image/jpeg'});
+                Promise.all(tempTab).then((values: any[]) => {
+                    
+                    res.end(JSON.stringify(values))
+                });
+               
+                
+        } else {
+
+            const filePath = path.join(root, req.url)
+            const image = sharp(filePath);
+            image.resize(200, 200).toBuffer((err: any, buffer: any) => {
+                res.setHeader('Content-Type', 'image/jpeg');
+                res.end(buffer);
+            });
         
-        
+         }
 
 
     }
@@ -120,7 +151,7 @@ export class Server implements ServerInterface {
         const server = http.createServer(async (req: any, res: http.ServerResponse) => {
 
             if(req.url.startsWith("/music")){
-                this.static(req, res)
+                this.propagateStatic(req, res)
                 return
             }   
            

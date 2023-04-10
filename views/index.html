@@ -9,6 +9,7 @@
   <body>
     <button>Wyślij</button>
     <button class="fds">levele</button>
+    <button class="fds2">levele2</button>
     <img src="" alt="" />
     <h1>SDIEMAAAAAAAAAA</h1>
     <script>
@@ -19,7 +20,22 @@
         });
         console.log(await data.json());
       });
-      /*
+
+      document.querySelector(".fds2").addEventListener("click", async () => {
+        const response = await fetch(
+          "http://localhost:3002/music/SongsImages/az.png",
+          {
+            method: "GET",
+          }
+        );
+        const blob = await response.blob();
+        console.log(blob);
+        const url = URL.createObjectURL(blob);
+        const image = new Image();
+        image.src = url;
+        document.body.appendChild(image);
+      });
+
       document.querySelector(".fds").addEventListener("click", async () => {
         const response = await fetch(
           "http://localhost:3002/music/SongsImages",
@@ -27,26 +43,14 @@
             method: "GET",
           }
         );
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const image = new Image();
-        image.src = url;
-        document.body.appendChild(image);
-      });
-      */
-
-      document.querySelector(".fds").addEventListener("click", async () => {
-        const response = await fetch(
-          "http://localhost:3002/music/SongsImages/avicii.jpg",
-          {
-            method: "GET",
-          }
-        );
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const image = new Image();
-        image.src = url;
-        document.body.appendChild(image);
+        const blob = await response.json();
+        blob.forEach((item, i) => {
+          const blob2 = new Blob([new Uint8Array(blob[i].data)]);
+          const url = URL.createObjectURL(blob2);
+          const image = new Image();
+          image.src = url;
+          document.body.appendChild(image);
+        });
       });
     </script>
   </body>
