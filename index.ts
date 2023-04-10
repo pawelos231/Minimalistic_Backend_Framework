@@ -8,6 +8,7 @@ import fs from "fs"
 const ServerInstance: Server = new Server()
 const app: MethodsHandler = ServerInstance.initServer()
 
+
 const auth2 = (req: any, res: http.ServerResponse): void => {
     req.example = "example"
 }

@@ -9,6 +9,7 @@
   <body>
     <button>Wyślij</button>
     <button class="fds">levele</button>
+    <img src="" alt="" />
     <h1>SDIEMAAAAAAAAAA</h1>
     <script>
       document.querySelector("button").addEventListener("click", async () => {
@@ -18,11 +19,34 @@
         });
         console.log(await data.json());
       });
+      /*
       document.querySelector(".fds").addEventListener("click", async () => {
-        const data = await fetch("http://localhost:3002/getLevelData", {
-          method: "GET",
-        });
-        console.log(await data.json());
+        const response = await fetch(
+          "http://localhost:3002/music/SongsImages",
+          {
+            method: "GET",
+          }
+        );
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const image = new Image();
+        image.src = url;
+        document.body.appendChild(image);
+      });
+      */
+
+      document.querySelector(".fds").addEventListener("click", async () => {
+        const response = await fetch(
+          "http://localhost:3002/music/SongsImages/avicii.jpg",
+          {
+            method: "GET",
+          }
+        );
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const image = new Image();
+        image.src = url;
+        document.body.appendChild(image);
       });
     </script>
   </body>

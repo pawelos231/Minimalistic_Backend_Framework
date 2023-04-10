@@ -28,7 +28,7 @@ app.get(
 );
 ```
 
-server can also serve static files via controllers with special attributes
+server can also serve static files (the default value for path is public)
 
 ## About game
 
