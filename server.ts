@@ -8,13 +8,15 @@ import { NOT_FOUND } from './constants/statusCodes'
 import { processMiddleware } from './middleware/process'
 import { MethodsHandler, ServerInterface } from './interfaces/serverInterface'
 import { Worker } from 'worker_threads';
+import { ErrorNode, RequestType, Routes, RouteHandler, RouteMiddleware } from './interfaces/serverInterface'
+import { isRequestTypeValid } from './helpers/request_type_validation'
 const sharp = require('sharp');
 
 
 const MIDDLEWARE = "middleware"
 
 
-const TYPES = {
+const STAIC_FILE_TYPES_TYPES = {
     html: 'text/html',
     css: 'text/css',
     js: 'application/javascript',
@@ -27,24 +29,33 @@ const TYPES = {
   };
 
 
-type ErrorNode = NodeJS.ErrnoException | null
+
+  
+
 
 
 export class Server implements ServerInterface {
-    private routes: any = {}
+
+    private routes: Routes = {}
 
     constructor(){
         
     }
 
     private BindFuncsToRoutes(
-    method: string, 
+    method: RequestType, 
     path:string,  
     handler: Function, 
     middleware: Function[] | null = null): void{
+
+        if(!isRequestTypeValid(method.toLowerCase())){
+            throw new Error("wrong method")
+        }
+
         if(typeof handler !== "function"){
             throw new Error("handler must be a func")
         }
+
         if (middleware && middleware.length > 0) {
             this.routes[path] = { [method]: handler, MIDDLEWARE: middleware }
         } else {
@@ -68,6 +79,29 @@ export class Server implements ServerInterface {
         })
     }
 
+    private createWorkerForImageResizing(filePath: string, width: number, height: number): Promise<Buffer>{
+
+        const promise: Promise<Buffer> = new Promise((resolve, reject) => {
+
+            const worker: Worker = new Worker(
+                './workers/resize-image-worker.ts', 
+                { workerData: {filePath, width, height} });
+
+            worker.on("message", (buffer: Buffer) => {
+                resolve(buffer)
+            })
+            worker.on('error', (err: Error) => {
+                reject(err);
+            });
+            worker.on('exit', (code: number) => {
+                if (code !== 0) {
+                  reject(new Error(`Worker stopped with exit code ${code}`));
+                }
+              });
+            
+        })
+        return promise
+    }
 
     private async propagateStatic(req: any, res: http.ServerResponse, pathToPropagate = "public"): Promise<void>{
 
@@ -79,9 +113,10 @@ export class Server implements ServerInterface {
       
         
             
-        (extension in TYPES) ? 
-        type = TYPES[extension as keyof typeof TYPES] : 
-        type = TYPES.html
+        (extension in STAIC_FILE_TYPES_TYPES) ? 
+        (type = STAIC_FILE_TYPES_TYPES
+        [extension as keyof typeof STAIC_FILE_TYPES_TYPES]) : 
+        type = STAIC_FILE_TYPES_TYPES.html
       
         const supportedExtension = Boolean(type);
 
@@ -113,31 +148,20 @@ export class Server implements ServerInterface {
 
                
                 files.forEach((file: string) => {
+                    
                     const filePath: string = path.join(root, req.url, file);
-                    const worker: Worker = new Worker(
-                        './workers/resize-image-worker.ts', 
-                        { workerData: filePath });
 
-                    const promise: Promise<Buffer> = new Promise((resolve, reject) => {
+                    if(!fs.statSync(filePath).isFile()){
+                        res.end("this folder has not only files in it")
+                        throw("this folder has not only files in it")
+                    }
 
-                        worker.on("message", (buffer: Buffer) => {
-                            resolve(buffer)
-                        })
-                        worker.on('error', (err: Error) => {
-                            reject(err);
-                        });
-                        worker.on('exit', (code: number) => {
-                            if (code !== 0) {
-                              reject(new Error(`Worker stopped with exit code ${code}`));
-                            }
-                          });
-                        
-                    })
-                    promises.push(promise)
+                    promises.push(this.createWorkerForImageResizing(filePath, 100, 100))
                 });
                 
                 res.writeHead(200, {'Content-Type': 'image/jpeg'});
-                Promise.all(promises).then((buffers: any[]) => {
+
+                Promise.all(promises).then((buffers: Buffer[]) => {
                     let yes = []
                     for(const i of buffers){
                         const buffer = Buffer.from(i);
@@ -169,7 +193,6 @@ export class Server implements ServerInterface {
                 return
             }   
            
-            
 
             const keyRoutes: string[] = Object.keys(this.routes)
             let match: boolean = false
@@ -180,7 +203,7 @@ export class Server implements ServerInterface {
                 
                 const parsedRoute: string = parseUrl(ROUTE)
                 const requestMethod: string = req.method.toLowerCase()
-    
+   
                 const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && this.routes[ROUTE][requestMethod]
     
                 if (urlMatchesMethodCorrect) {

@@ -28,7 +28,7 @@ app.get(
 );
 ```
 
-server can also serve static files (the default value for path is public)
+server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads
 
 ## About game
 
