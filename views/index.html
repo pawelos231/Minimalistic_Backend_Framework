@@ -45,6 +45,7 @@
         );
         const blob = await response.json();
         blob.forEach((item, i) => {
+          console.log(blob[i]);
           const blob2 = new Blob([new Uint8Array(blob[i].data)]);
           const url = URL.createObjectURL(blob2);
           const image = new Image();

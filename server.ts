@@ -7,6 +7,7 @@ import { flatten2DArray } from './helpers/flatten'
 import { NOT_FOUND } from './constants/statusCodes'
 import { processMiddleware } from './middleware/process'
 import { MethodsHandler, ServerInterface } from './interfaces/serverInterface'
+import { Worker } from 'worker_threads';
 const sharp = require('sharp');
 
 
@@ -108,28 +109,41 @@ export class Server implements ServerInterface {
         if (fs.existsSync(path.join(root, req.url)) && !extension) {
 
             const files = fs.readdirSync(path.join(root, req.url));
-            let tempTab: Promise<unknown>[] = []
+            const promises: Promise<Buffer>[] = [];
 
                
-                files.forEach((item: string) => {
+                files.forEach((file: string) => {
+                    const filePath: string = path.join(root, req.url, file);
+                    const worker: Worker = new Worker(
+                        './workers/resize-image-worker.ts', 
+                        { workerData: filePath });
 
-                    const promise: Promise<unknown> = new Promise((resolve, reject) => {
-                        const filePath: string = path.join(root, req.url, item);
-                        const image = sharp(filePath, {concurrency: 4});
-                        image.resize(100, 100).toBuffer((err: any, buffer: any) => {
+                    const promise: Promise<Buffer> = new Promise((resolve, reject) => {
+
+                        worker.on("message", (buffer: Buffer) => {
                             resolve(buffer)
-                            if(err){
-                                reject(err)
-                            }
+                        })
+                        worker.on('error', (err: Error) => {
+                            reject(err);
                         });
+                        worker.on('exit', (code: number) => {
+                            if (code !== 0) {
+                              reject(new Error(`Worker stopped with exit code ${code}`));
+                            }
+                          });
+                        
                     })
-                    tempTab.push(promise)
+                    promises.push(promise)
                 });
-
+                
                 res.writeHead(200, {'Content-Type': 'image/jpeg'});
-                Promise.all(tempTab).then((values: any[]) => {
-                    
-                    res.end(JSON.stringify(values))
+                Promise.all(promises).then((buffers: any[]) => {
+                    let yes = []
+                    for(const i of buffers){
+                        const buffer = Buffer.from(i);
+                        yes.push(buffer)
+                    }
+                    res.end(JSON.stringify(yes))
                 });
                
                 
