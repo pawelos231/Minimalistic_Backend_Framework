@@ -1,4 +1,4 @@
-# API for Arkanoid Game with custom framework
+# Custom Framework with API for arkanoid game
 
 <p align='center'>
 <br>

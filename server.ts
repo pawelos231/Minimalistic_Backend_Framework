@@ -28,10 +28,11 @@ const STAIC_FILE_TYPES_TYPES = {
     xml: 'application/xml',
   };
 
-
-
-  
-
+  const PUT = "put"
+  const PATCH = "patch"
+  const GET = "get"
+  const POST = "post"
+  const DELETE = "delete"
 
 
 export class Server implements ServerInterface {
@@ -144,7 +145,7 @@ export class Server implements ServerInterface {
         if (fs.existsSync(path.join(root, req.url)) && !extension) {
 
             const files = fs.readdirSync(path.join(root, req.url));
-            const promises: Promise<Buffer>[] = [];
+            const WorkerPromises: Promise<Buffer>[] = [];
 
                
                 files.forEach((file: string) => {
@@ -153,15 +154,15 @@ export class Server implements ServerInterface {
 
                     if(!fs.statSync(filePath).isFile()){
                         res.end("this folder has not only files in it")
-                        throw("this folder has not only files in it")
+                        throw new Error("this folder has not only files in it")
                     }
 
-                    promises.push(this.createWorkerForImageResizing(filePath, 100, 100))
+                    WorkerPromises.push(this.createWorkerForImageResizing(filePath, 100, 100))
                 });
                 
                 res.writeHead(200, {'Content-Type': 'image/jpeg'});
 
-                Promise.all(promises).then((buffers: Buffer[]) => {
+                Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
                     let yes = []
                     for(const i of buffers){
                         const buffer = Buffer.from(i);
@@ -250,24 +251,24 @@ export class Server implements ServerInterface {
         return {
 
             get(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes("get", path, handler, flatten2DArray(middleware))
+                ServerInstance.BindFuncsToRoutes(GET, path, handler, flatten2DArray(middleware))
             },
 
             post(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes("post", path, handler, flatten2DArray(middleware))
+                ServerInstance.BindFuncsToRoutes(POST, path, handler, flatten2DArray(middleware))
                 
             },
 
             patch(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes("patch", path, handler, flatten2DArray(middleware))
+                ServerInstance.BindFuncsToRoutes(PATCH, path, handler, flatten2DArray(middleware))
             },
 
             put(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes("put", path, handler, flatten2DArray(middleware))
+                ServerInstance.BindFuncsToRoutes(PUT, path, handler, flatten2DArray(middleware))
             },
 
             delete(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes("delete", path, handler, flatten2DArray(middleware))
+                ServerInstance.BindFuncsToRoutes(DELETE, path, handler, flatten2DArray(middleware))
             },
 
         }
