@@ -12,7 +12,7 @@ Backend for my Arkanoid game written in pure node.js that i built framework upon
 To create api route with handler and some controller level middleware you would need to create an instance of the server that file server.ts provides, here is a simple exapmle:
 
 ```typescript
-const app: Server<Function> = initServer();
+const app: Server = initServer();
 
 const auth2 = (req: any, res: http.ServerResponse): void => {
   req.example = "example";
