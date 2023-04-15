@@ -38,6 +38,11 @@ const STAIC_FILE_TYPES_TYPES = {
 export class Server implements ServerInterface {
 
     private routes: Routes = {}
+    private middlewares = []
+    private currentMiddlewareIndex = 0
+    private req: any = undefined
+    private res: any = undefined
+
 
     constructor(){
         
@@ -67,12 +72,12 @@ export class Server implements ServerInterface {
 
     private bodyReader(req: http.IncomingMessage): Promise<string>{
         return new Promise((resolve, reject) => {
-            let body: string = ""
+            const chunks: Buffer[] = []
             req.on("data", (chunk: Buffer): void => {
-                body += chunk
+                chunks.push(chunk)
             })
             req.on("end", (): void => {
-                resolve(body)
+                resolve(Buffer.concat(chunks).toString())
             })
             req.on("error", (err: Error): void => {
                 reject(err);
@@ -163,12 +168,12 @@ export class Server implements ServerInterface {
                 res.writeHead(200, {'Content-Type': 'image/jpeg'});
 
                 Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
-                    let yes = []
+                    const ImagesBufferArray: Buffer[] = []
                     for(const i of buffers){
-                        const buffer = Buffer.from(i);
-                        yes.push(buffer)
+                        const buffer: Buffer = Buffer.from(i);
+                        ImagesBufferArray.push(buffer)
                     }
-                    res.end(JSON.stringify(yes))
+                    res.end(JSON.stringify(ImagesBufferArray))
                 });
                
                 
@@ -186,59 +191,93 @@ export class Server implements ServerInterface {
 
     }
 
-    initServer(): MethodsHandler {
-        const server = http.createServer(async (req: any, res: http.ServerResponse) => {
+     public use(middleware: any)  {
+        this.middlewares.push(middleware);
+     };
 
+
+     private async handleRequest(req: any, res: http.ServerResponse){
+        const keyRoutes: string[] = Object.keys(this.routes)
+        let match: boolean = false
+        console.log(res.getHeaders())
+        AllowCors(res)
+
+        for (const ROUTE of keyRoutes) {
+
+            AllowCors(res)
+            const parsedRoute: string = parseUrl(ROUTE)
+            const requestMethod: string = req.method.toLowerCase()
+
+            const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && this.routes[ROUTE][requestMethod]
+
+            if (urlMatchesMethodCorrect) {
+
+                const handler: Function = this.routes[ROUTE][requestMethod]
+                const middleware: Function[] = this.routes[ROUTE][MIDDLEWARE]
+                
+                if (middleware) {
+                    for (const [key, func] of middleware.entries()) {
+                        processMiddleware(func, req, res)
+                    }
+                }
+
+                const matcher = req.url.match(new RegExp(parsedRoute))
+                req.params = matcher.groups
+                req.body = await this.bodyReader(req)
+
+              
+                handler(req, res)
+
+                match = true
+                break;
+            }
+        }
+
+
+        if (!match) {
+            res.statusCode = NOT_FOUND;
+            const file: string = fs.readFileSync(path.resolve(__dirname, 'views', '404.html'), {
+                encoding: "utf-8"
+            })
+            res.end(file)
+        }
+
+        res.end()
+     }
+
+     
+
+
+    public initServer(): MethodsHandler {
+        const server = http.createServer(async (req: any, res: http.ServerResponse) => {
+        
             if(req.url.startsWith("/music")){
                 this.propagateStatic(req, res)
                 return
-            }   
-           
+            }
 
-            const keyRoutes: string[] = Object.keys(this.routes)
-            let match: boolean = false
-           
+         
 
-            for (const ROUTE of keyRoutes) {
-
+            const nextMiddleware = async () => {
+                const middleware = this.middlewares[this.currentMiddlewareIndex];
+                this.currentMiddlewareIndex++;
                 
-                const parsedRoute: string = parseUrl(ROUTE)
-                const requestMethod: string = req.method.toLowerCase()
-   
-                const urlMatchesMethodCorrect: boolean = new RegExp(parsedRoute).test(req.url) && this.routes[ROUTE][requestMethod]
-    
-                if (urlMatchesMethodCorrect) {
-
-                    const handler: Function = this.routes[ROUTE][requestMethod]
-                    const middleware: Function[] = this.routes[ROUTE][MIDDLEWARE]
+                if (middleware) {
+                    middleware(req, res, nextMiddleware);
                     
-                    if (middleware) {
-                        for (const [key, func] of middleware.entries()) {
-                            processMiddleware(func, req, res)
-                        }
-                    }
-    
-                    const matcher = req.url.match(new RegExp(parsedRoute))
-                    req.params = matcher.groups
-                    req.body = await this.bodyReader(req)
-    
-                    AllowCors(res)
-                    handler(req, res)
-    
-                    match = true
-                    break;
+                    console.log(res.getHeaders())
+                } else {
+                  this.handleRequest(this.req, this.res);
                 }
-            }
-    
-            if (!match) {
-                res.statusCode = NOT_FOUND;
-                const file: string = fs.readFileSync(path.resolve(__dirname, 'views', '404.html'), {
-                    encoding: "utf-8"
-                })
-                res.end(file)
-            }
-    
-            res.end()
+
+            
+              };
+               nextMiddleware()
+
+            //provide better solution for chekcing what to serve
+
+           
+
         })
 
         const ServerInstance: this = this
@@ -250,25 +289,30 @@ export class Server implements ServerInterface {
     
         return {
 
-            get(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes(GET, path, handler, flatten2DArray(middleware))
+            get(path: string, handler: Function, ...middleware: Function[][]): void {
+                ServerInstance.
+                BindFuncsToRoutes(GET, path, handler, flatten2DArray(middleware))
             },
 
-            post(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes(POST, path, handler, flatten2DArray(middleware))
+            post(path: string, handler: Function, ...middleware:Function[][]): void {
+                ServerInstance.
+                BindFuncsToRoutes(POST, path, handler, flatten2DArray(middleware))
                 
             },
 
-            patch(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes(PATCH, path, handler, flatten2DArray(middleware))
+            patch(path: string, handler: Function, ...middleware: Function[][]): void {
+                ServerInstance.
+                BindFuncsToRoutes(PATCH, path, handler, flatten2DArray(middleware))
             },
 
-            put(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes(PUT, path, handler, flatten2DArray(middleware))
+            put(path: string, handler: Function, ...middleware: Function[][]): void {
+                ServerInstance.
+                BindFuncsToRoutes(PUT, path, handler, flatten2DArray(middleware))
             },
 
-            delete(path: string, handler: Function, ...middleware: Array<Function[]>): void {
-                ServerInstance.BindFuncsToRoutes(DELETE, path, handler, flatten2DArray(middleware))
+            delete(path: string, handler: Function, ...middleware: Function[][]): void {
+                ServerInstance.
+                BindFuncsToRoutes(DELETE, path, handler, flatten2DArray(middleware))
             },
 
         }

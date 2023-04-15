@@ -4,14 +4,24 @@ import { GET_STATS, POST_STATS, GET_LEVELS } from "./constants/routes"
 import { MethodsHandler } from "./interfaces/serverInterface"
 import http from 'http'
 import fs from "fs"
+import { AllowCors } from "./middleware/cors"
 
 const ServerInstance: Server = new Server()
-const app: MethodsHandler = ServerInstance.initServer()
 
+
+
+ServerInstance.use((req: any, res: http.ServerResponse, next: Function) => {
+    AllowCors(res)
+  
+    next()
+  });
+
+const app: MethodsHandler = ServerInstance.initServer()
 
 const auth2 = (req: any, res: http.ServerResponse): void => {
     req.example = "example"
 }
+
 app.get(GET_STATS, getStatsData, [auth2])
 app.get(GET_LEVELS, getLevelData)
 app.post(POST_STATS, sendStatsData)
