@@ -8,11 +8,8 @@ import { AllowCors } from "./middleware/cors"
 
 const ServerInstance: Server = new Server()
 
-
-
 ServerInstance.use((req: any, res: http.ServerResponse, next: Function) => {
     AllowCors(res)
-  
     next()
   });
 

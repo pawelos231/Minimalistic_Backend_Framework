@@ -9,23 +9,25 @@ Backend for my Arkanoid game written in pure node.js that i built framework upon
 
 ## Reference
 
-To create api route with handler and some controller level middleware you would need to create an instance of the server that file server.ts provides, here is a simple exapmle:
+To create api route with handler and some controller and router level middleware you would need to create an instance of the server that file server.ts provides, here is a simple exapmle:
 
 ```typescript
-const app: Server = initServer();
+const ServerInstance: Server = new Server();
+
+ServerInstance.use((req: any, res: http.ServerResponse, next: Function) => {
+  AllowCors(res);
+  next();
+});
+
+const app: MethodsHandler = ServerInstance.initServer();
 
 const auth2 = (req: any, res: http.ServerResponse): void => {
   req.example = "example";
-  console.log("middleware");
 };
 
-app.get(
-  "/someRoute/:id",
-  function (req, res: http.ServerResponse) {
-    console.log("controller");
-  },
-  [auth]
-);
+app.get(GET_STATS, getStatsData, [auth2]);
+app.get(GET_LEVELS, getLevelData);
+app.post(POST_STATS, sendStatsData);
 ```
 
 server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads
