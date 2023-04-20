@@ -39,7 +39,7 @@ export class Server implements ServerInterface {
 
     private routes: Routes = {}
     private middlewares = []
-    private currentMiddlewareIndex = 0
+    private currentMiddlewareIndex: number = 0
     private req: any = undefined
     private res: any = undefined
 
@@ -158,7 +158,7 @@ export class Server implements ServerInterface {
                     const filePath: string = path.join(root, req.url, file);
 
                     if(!fs.statSync(filePath).isFile()){
-                        res.end("this folder has not only files in it")
+                        res.end("this folder does not contain files only")
                         throw new Error("this folder has not only files in it")
                     }
 
@@ -191,7 +191,7 @@ export class Server implements ServerInterface {
 
     }
 
-     public use(middleware: any)  {
+     public use(middleware: any): void  {
         this.middlewares.push(middleware);
      };
 
@@ -199,12 +199,13 @@ export class Server implements ServerInterface {
      private async handleRequest(req: any, res: http.ServerResponse){
         const keyRoutes: string[] = Object.keys(this.routes)
         let match: boolean = false
-        console.log(res.getHeaders())
-        AllowCors(res)
+        
+        //AllowCors(res)
 
         for (const ROUTE of keyRoutes) {
 
-            AllowCors(res)
+            //AllowCors(res)
+          
             const parsedRoute: string = parseUrl(ROUTE)
             const requestMethod: string = req.method.toLowerCase()
 
@@ -251,30 +252,29 @@ export class Server implements ServerInterface {
     public initServer(): MethodsHandler {
         const server = http.createServer(async (req: any, res: http.ServerResponse) => {
         
+             //provide better solution for chekcing what to serve
+            let currentMiddlewareIndex = 0;
             if(req.url.startsWith("/music")){
                 this.propagateStatic(req, res)
                 return
             }
-
          
 
-            const nextMiddleware = async () => {
-                const middleware = this.middlewares[this.currentMiddlewareIndex];
-                this.currentMiddlewareIndex++;
+            const nextMiddleware = async (): Promise<void> => {
+                const middleware =
+                this.middlewares[currentMiddlewareIndex];
+                currentMiddlewareIndex++;
                 
                 if (middleware) {
                     middleware(req, res, nextMiddleware);
-                    
-                    console.log(res.getHeaders())
                 } else {
-                  this.handleRequest(this.req, this.res);
+                  this.handleRequest(req, res);
                 }
 
             
               };
                nextMiddleware()
 
-            //provide better solution for chekcing what to serve
 
            
 
@@ -291,28 +291,42 @@ export class Server implements ServerInterface {
 
             get(path: string, handler: Function, ...middleware: Function[][]): void {
                 ServerInstance.
-                BindFuncsToRoutes(GET, path, handler, flatten2DArray(middleware))
+                BindFuncsToRoutes(GET, 
+                    path, 
+                    handler, 
+                    flatten2DArray(middleware))
             },
 
             post(path: string, handler: Function, ...middleware:Function[][]): void {
                 ServerInstance.
-                BindFuncsToRoutes(POST, path, handler, flatten2DArray(middleware))
-                
+                BindFuncsToRoutes(POST, 
+                    path, 
+                    handler, 
+                    flatten2DArray(middleware))
             },
 
             patch(path: string, handler: Function, ...middleware: Function[][]): void {
                 ServerInstance.
-                BindFuncsToRoutes(PATCH, path, handler, flatten2DArray(middleware))
+                BindFuncsToRoutes(PATCH, 
+                    path, 
+                    handler, 
+                    flatten2DArray(middleware))
             },
 
             put(path: string, handler: Function, ...middleware: Function[][]): void {
                 ServerInstance.
-                BindFuncsToRoutes(PUT, path, handler, flatten2DArray(middleware))
+                BindFuncsToRoutes(PUT, 
+                    path, 
+                    handler, 
+                    flatten2DArray(middleware))
             },
 
             delete(path: string, handler: Function, ...middleware: Function[][]): void {
                 ServerInstance.
-                BindFuncsToRoutes(DELETE, path, handler, flatten2DArray(middleware))
+                BindFuncsToRoutes(DELETE, 
+                    path, 
+                    handler, 
+                    flatten2DArray(middleware))
             },
 
         }

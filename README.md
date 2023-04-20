@@ -9,7 +9,7 @@ Backend for my Arkanoid game written in pure node.js that i built framework upon
 
 ## Reference
 
-To create api route with handler and some controller and router level middleware you would need to create an instance of the server that file server.ts provides, here is a simple exapmle:
+Framework allows you to create both controller level and application level middleware where middleware functions are executed on every request regardless of their paths. To pass controller level middleware you have to pass a function that has req nad res objects as parameters, controller level middleware happens on specific route bound to to this middleware, bellow you can see basic example the basic usage of the framework.
 
 ```typescript
 const ServerInstance: Server = new Server();
@@ -30,8 +30,14 @@ app.get(GET_LEVELS, getLevelData);
 app.post(POST_STATS, sendStatsData);
 ```
 
-server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads
+server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads, 
 
 ## About game
 
 Due to the fact that this framework was mainly created for one of my games, it probably will be extracted to different repository in the future
+
+## Why ?
+
+I wanted to implement my own framework to give myself better insight of more advanced and "hidden" usages of node. Because this projects was created mainly for learning purposes, it can and likely will change over the time.
+
+
