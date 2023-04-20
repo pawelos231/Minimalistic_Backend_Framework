@@ -6,6 +6,11 @@ import http from 'http'
 import fs from "fs"
 import { AllowCors } from "./middleware/cors"
 
+
+const GET_STATS = "/getStats"
+const POST_STATS = "/postStats"
+const GET_LEVELS = "/getLevelData"
+
 const ServerInstance: Server = new Server()
 
 ServerInstance.use((req: any, res: http.ServerResponse, next: Function) => {

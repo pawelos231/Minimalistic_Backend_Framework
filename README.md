@@ -12,6 +12,10 @@ Backend for my Arkanoid game written in pure node.js that i built framework upon
 Framework allows you to create both controller level and application level middleware where middleware functions are executed on every request regardless of their paths. To pass controller level middleware you have to pass a function that has req nad res objects as parameters, controller level middleware happens on specific route bound to to this middleware, bellow you can see basic example the basic usage of the framework.
 
 ```typescript
+const GET_STATS = "/getStats"
+const POST_STATS = "/postStats"
+const GET_LEVELS = "/getLevelData"
+
 const ServerInstance: Server = new Server();
 
 ServerInstance.use((req: any, res: http.ServerResponse, next: Function) => {
