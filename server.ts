@@ -257,31 +257,6 @@ export class Server implements ServerInterface {
         res.end()
      }
 
-     
-     private handleRequestMiddlewareLogic(req, res){
-        let currentMiddlewareIndex: number = 0;
-
-            if(req.url.startsWith("/music")){
-                this.propagateStatic(req, res)
-                return
-            }
-         
-
-            const nextMiddleware = async (): Promise<void> => {
-                const middleware =
-                this.middlewares[currentMiddlewareIndex];
-                currentMiddlewareIndex++;
-                
-                if (middleware) {
-                    middleware(req, res, nextMiddleware);
-                } else {
-                  this.handleRequest(req, res);
-                }
-
-            
-              };
-            nextMiddleware()
-     }
   
     
     public get(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
