@@ -2,57 +2,68 @@ import http from 'http'
 import fs from 'fs'
 import path from 'path'
 import { parseUrl } from './helpers/urlParser'
-import { AllowCors } from './middleware/cors'
 import { flatten2DArray } from './helpers/flatten'
-import { NOT_FOUND } from './constants/statusCodes'
 import { processMiddleware } from './middleware/process'
-import { MethodsHandler, ServerInterface } from './interfaces/serverInterface'
+import { ServerInterface } from './interfaces/serverInterface'
 import { Worker } from 'worker_threads';
-import { ErrorNode, RequestType, Routes, RouteHandler, RouteMiddleware } from './interfaces/serverInterface'
+import { RequestType, Routes, RouteHandler, RouteMiddleware } from './interfaces/serverInterface'
 import { isRequestTypeValid } from './helpers/request_type_validation'
-const sharp = require('sharp');
+import { STAIC_FILE_TYPES_EXTENSIONS } from './constants/StaticFileTypes'
+import { POST, PUT, PATCH, DELETE, GET, NOT_FOUND } from './constants/responseHelpers'
+import sharp from 'sharp'
 
 
 const MIDDLEWARE = "middleware"
 
 
-const STAIC_FILE_TYPES_TYPES = {
-    html: 'text/html',
-    css: 'text/css',
-    js: 'application/javascript',
-    png: 'image/png',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    gif: 'image/gif',
-    json: 'application/json',
-    xml: 'application/xml',
-  };
-
-  const PUT = "put"
-  const PATCH = "patch"
-  const GET = "get"
-  const POST = "post"
-  const DELETE = "delete"
-
-
 export class Server implements ServerInterface {
 
     private routes: Routes = {}
-    private middlewares = []
-    private currentMiddlewareIndex: number = 0
-    private req: any = undefined
-    private res: any = undefined
+    private middlewares: RouteMiddleware[] = []
 
-
-    constructor(){
-        
+    constructor({...options} = {}){
+        const server = http.createServer(this.handleRequesWithMiddleware.bind(this))
+        server.listen(3002, () => {
+            console.log("listening on port 3002")
+        })
     }
 
-    private BindFuncsToRoutes(
+
+
+    public handleRequesWithMiddleware(req: any, res: http.ServerResponse): void {
+      
+        
+             //provide better solution for chekcing what to serve
+            let currentMiddlewareIndex: number = 0;
+            if(req.url.startsWith("/music")){
+                this.propagateStatic(req, res)
+                return
+            }
+         
+
+            const nextMiddleware = async (): Promise<void> => {
+                const middleware =
+                this.middlewares[currentMiddlewareIndex];
+                currentMiddlewareIndex++;
+                
+                if (middleware) {
+                    middleware(req, res, nextMiddleware);
+                } else {
+                  this.handleRequest(req, res);
+                }
+
+            
+              };
+            nextMiddleware()
+    
+    }
+
+
+    private addRoute(
     method: RequestType, 
     path:string,  
-    handler: Function, 
-    middleware: Function[] | null = null): void{
+    handler: RouteHandler, 
+    middleware: RouteMiddleware[] | null = null): void{
 
         if(!isRequestTypeValid(method.toLowerCase())){
             throw new Error("wrong method")
@@ -115,14 +126,14 @@ export class Server implements ServerInterface {
         const root: string = path.normalize(path.resolve(directoryName));
 
         const extension: string = path.extname(req.url).slice(1);
-        let type = "";
+        let type: string = "";
       
         
             
-        (extension in STAIC_FILE_TYPES_TYPES) ? 
-        (type = STAIC_FILE_TYPES_TYPES
-        [extension as keyof typeof STAIC_FILE_TYPES_TYPES]) : 
-        type = STAIC_FILE_TYPES_TYPES.html
+        (extension in STAIC_FILE_TYPES_EXTENSIONS) ? 
+        (type = STAIC_FILE_TYPES_EXTENSIONS
+        [extension as keyof typeof STAIC_FILE_TYPES_EXTENSIONS]) : 
+        type = STAIC_FILE_TYPES_EXTENSIONS.html
       
         const supportedExtension = Boolean(type);
 
@@ -165,6 +176,7 @@ export class Server implements ServerInterface {
                     WorkerPromises.push(this.createWorkerForImageResizing(filePath, 100, 100))
                 });
                 
+                //to fix
                 res.writeHead(200, {'Content-Type': 'image/jpeg'});
 
                 Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
@@ -191,20 +203,17 @@ export class Server implements ServerInterface {
 
     }
 
-     public use(middleware: any): void  {
-        this.middlewares.push(middleware);
-     };
+     
+
 
 
      private async handleRequest(req: any, res: http.ServerResponse){
         const keyRoutes: string[] = Object.keys(this.routes)
         let match: boolean = false
-        
-        //AllowCors(res)
 
+    
         for (const ROUTE of keyRoutes) {
 
-            //AllowCors(res)
           
             const parsedRoute: string = parseUrl(ROUTE)
             const requestMethod: string = req.method.toLowerCase()
@@ -237,9 +246,11 @@ export class Server implements ServerInterface {
 
         if (!match) {
             res.statusCode = NOT_FOUND;
+
             const file: string = fs.readFileSync(path.resolve(__dirname, 'views', '404.html'), {
                 encoding: "utf-8"
             })
+
             res.end(file)
         }
 
@@ -247,13 +258,9 @@ export class Server implements ServerInterface {
      }
 
      
+     private handleRequestMiddlewareLogic(req, res){
+        let currentMiddlewareIndex: number = 0;
 
-
-    public initServer(): MethodsHandler {
-        const server = http.createServer(async (req: any, res: http.ServerResponse) => {
-        
-             //provide better solution for chekcing what to serve
-            let currentMiddlewareIndex = 0;
             if(req.url.startsWith("/music")){
                 this.propagateStatic(req, res)
                 return
@@ -273,63 +280,36 @@ export class Server implements ServerInterface {
 
             
               };
-               nextMiddleware()
-
-
-           
-
-        })
-
-        const ServerInstance: this = this
-
-   
-        server.listen(3002, () => {
-            console.log("listening on port 3002")
-        })
+            nextMiddleware()
+     }
+  
     
-        return {
-
-            get(path: string, handler: Function, ...middleware: Function[][]): void {
-                ServerInstance.
-                BindFuncsToRoutes(GET, 
-                    path, 
-                    handler, 
-                    flatten2DArray(middleware))
-            },
-
-            post(path: string, handler: Function, ...middleware:Function[][]): void {
-                ServerInstance.
-                BindFuncsToRoutes(POST, 
-                    path, 
-                    handler, 
-                    flatten2DArray(middleware))
-            },
-
-            patch(path: string, handler: Function, ...middleware: Function[][]): void {
-                ServerInstance.
-                BindFuncsToRoutes(PATCH, 
-                    path, 
-                    handler, 
-                    flatten2DArray(middleware))
-            },
-
-            put(path: string, handler: Function, ...middleware: Function[][]): void {
-                ServerInstance.
-                BindFuncsToRoutes(PUT, 
-                    path, 
-                    handler, 
-                    flatten2DArray(middleware))
-            },
-
-            delete(path: string, handler: Function, ...middleware: Function[][]): void {
-                ServerInstance.
-                BindFuncsToRoutes(DELETE, 
-                    path, 
-                    handler, 
-                    flatten2DArray(middleware))
-            },
-
-        }
+    public get(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+        this.addRoute(GET, path, handler, flatten2DArray(middleware))
     }
+    
+
+    public delete(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+        this.addRoute(DELETE, path, handler, flatten2DArray(middleware))
+    }
+
+
+    public put(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+        this.addRoute(PUT, path,handler, flatten2DArray(middleware))
+    }
+
+
+    public patch(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+        this.addRoute(PATCH, path, handler, flatten2DArray(middleware))
+    }
+
+
+    public post(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+        this.addRoute(POST, path, handler, flatten2DArray(middleware))
+    }
+
+    public use(middleware: any): void  {
+        this.middlewares.push(middleware);
+     };
 }
 

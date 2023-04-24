@@ -1,25 +1,29 @@
-export interface MethodsHandler {
-    get: (path: string, handler: Function, ...middleware: Function[][]) => void
-    put: (path: string, handler: Function, ...middleware: Function[][]) => void
-    patch: (path: string, handler: Function, ...middleware: Function[][]) => void
-    delete: (path: string, handler: Function, ...middleware: Function[][]) => void
-    post: (path: string, handler: Function, ...middleware: Function[][]) => void
-   
-}
-
+import http from 'http'
 export interface ServerInterface {
-    initServer: () => MethodsHandler
+    handleRequesWithMiddleware: (req: any, res: any) => void
+
+    use: (middleware: RouteMiddleware) => void
+
+    get: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
+
+    put: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
+
+    patch: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
+
+    delete: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
+
+    post: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
 }
 
 
 export type ErrorNode = NodeJS.ErrnoException | null
 
 export interface RouteHandler {
-    (...args: any[]): any;
+    (req: any, res: http.ServerResponse): any;
   }
   
 export interface RouteMiddleware {
-    (...args: any[]): any;
+    (req: any, res: http.ServerResponse, next: Function): any;
   }
 
 export type RequestType = 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -27,5 +31,5 @@ export type RequestType = 'get' | 'post' | 'put' | 'delete' | 'patch';
 export  type Routes = {
     [path: string]: {
       [method in RequestType]?: RouteHandler;
-    } & { MIDDLEWARE?: Function[] };
+    } & { MIDDLEWARE?: RouteMiddleware[] };
   };

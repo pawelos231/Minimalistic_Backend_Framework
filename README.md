@@ -9,22 +9,21 @@ Backend for my Arkanoid game written in pure node.js that i built framework upon
 
 ## Reference
 
-Framework allows you to create both controller level and application level middleware where middleware functions are executed on every request regardless of their paths. To pass controller level middleware you have to pass a function that has req nad res objects as parameters, controller level middleware happens on specific route bound to to this middleware, bellow you can see basic example the basic usage of the framework.
+Framework allows you to create both controller level and application level middleware where middleware functions are executed on every request regardless of their paths. To pass controller level middleware you have to pass a function that has req nad res objects as parameters, controller level middleware happens on specific route bound to to this middleware, bellow you can see basic usage of the framework.
 
 ```typescript
-const GET_STATS = "/getStats"
-const POST_STATS = "/postStats"
-const GET_LEVELS = "/getLevelData"
+const GET_STATS = "/getStats";
+const POST_STATS = "/postStats";
+const GET_LEVELS = "/getLevelData";
 
-const ServerInstance: Server = new Server();
+const app: Server = new Server();
 
-ServerInstance.use((req: any, res: http.ServerResponse, next: Function) => {
+app.use((req: any, res: http.ServerResponse, next: Function) => {
   AllowCors(res);
   next();
 });
 
-const app: MethodsHandler = ServerInstance.initServer();
-
+/*example middleware auth function */
 const auth2 = (req: any, res: http.ServerResponse): void => {
   req.example = "example";
 };
@@ -34,7 +33,7 @@ app.get(GET_LEVELS, getLevelData);
 app.post(POST_STATS, sendStatsData);
 ```
 
-server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads, 
+server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads,
 
 ## About game
 
@@ -43,5 +42,3 @@ Due to the fact that this framework was mainly created for one of my games, it p
 ## Why ?
 
 I wanted to implement my own framework to give myself better insight of more advanced and "hidden" usages of node. Because this projects was created mainly for learning purposes, it can and likely will change over the time.
-
-
