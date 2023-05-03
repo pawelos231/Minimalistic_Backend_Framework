@@ -21,7 +21,7 @@ export class Server implements ServerInterface {
     private routes: Routes = {}
     private middlewares: RouteMiddleware[] = []
 
-    constructor({...options} = {}){
+    constructor(options = {}){
         const server = http.createServer(this.handleRequesWithMiddleware.bind(this))
         server.listen(3002, () => {
             console.log("listening on port 3002")
@@ -180,12 +180,7 @@ export class Server implements ServerInterface {
                 res.writeHead(200, {'Content-Type': 'image/jpeg'});
 
                 Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
-                    const ImagesBufferArray: Buffer[] = []
-                    for(const i of buffers){
-                        const buffer: Buffer = Buffer.from(i);
-                        ImagesBufferArray.push(buffer)
-                    }
-                    res.end(JSON.stringify(ImagesBufferArray))
+                    res.end(JSON.stringify(buffers))
                 });
                
                 
@@ -193,7 +188,7 @@ export class Server implements ServerInterface {
 
             const filePath = path.join(root, req.url)
             const image = sharp(filePath);
-            image.resize(200, 200).toBuffer((err: any, buffer: any) => {
+            image.resize(200, 200).toBuffer((err: any, buffer: Buffer) => {
                 res.setHeader('Content-Type', 'image/jpeg');
                 res.end(buffer);
             });
