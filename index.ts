@@ -1,5 +1,5 @@
 import { Server } from "./server"
-import { getStatsData, sendStatsData, getLevelData } from "./controllers/gameData"
+import { getStatsData, sendStatsData, getLevelData } from "./Arkanoid_API/controllers/gameData"
 import { GET_STATS, POST_STATS, GET_LEVELS } from "./constants/routes"
 import http from 'http'
 import fs from "fs"

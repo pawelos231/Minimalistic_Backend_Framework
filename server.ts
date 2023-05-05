@@ -188,9 +188,12 @@ export class Server implements ServerInterface {
 
             const filePath = path.join(root, req.url)
             const image = sharp(filePath);
-            image.resize(200, 200).toBuffer((err: any, buffer: Buffer) => {
+            image.resize(200, 200).toBuffer((err, buffer: Buffer) => {
                 res.setHeader('Content-Type', 'image/jpeg');
                 res.end(buffer);
+                if(err){
+                    throw new Error(String(err))
+                }
             });
         
          }
@@ -217,8 +220,9 @@ export class Server implements ServerInterface {
 
             if (urlMatchesMethodCorrect) {
 
-                const handler: Function = this.routes[ROUTE][requestMethod]
-                const middleware: Function[] = this.routes[ROUTE][MIDDLEWARE]
+                const handler: RouteHandler = this.routes[ROUTE][requestMethod]
+                const middleware: RouteMiddleware[] = 
+                this.routes[ROUTE][MIDDLEWARE]
                 
                 if (middleware) {
                     for (const [key, func] of middleware.entries()) {
@@ -278,7 +282,7 @@ export class Server implements ServerInterface {
         this.addRoute(POST, path, handler, flatten2DArray(middleware))
     }
 
-    public use(middleware: any): void  {
+    public use(middleware: RouteMiddleware): void  {
         this.middlewares.push(middleware);
      };
 }

@@ -1,7 +1,7 @@
 import http from 'http'
 import fs from 'fs'
 import { levelTransform } from '../helpers/LevelTransform'
-import { Response } from '../interfaces/wrappers'
+import { Response } from '../../interfaces/wrappers'
 
 export const getStatsData = (req: http.IncomingMessage, res: Response) => {
     const temporary: string = JSON.stringify(["siema", "siema1"])

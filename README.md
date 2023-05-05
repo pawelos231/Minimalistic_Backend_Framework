@@ -5,11 +5,19 @@
 <i><b>[🚧 Work in progress! 🚧]</b></i>
 </p>
 
-Backend for my Arkanoid game written in pure node.js that i built framework upon, the main idea for creating this small framework was to avoid overhead that frameworks like [epxress](https://expressjs.com/en/api.html) provides, it was also a very nice learning experience, framework supports all the main features like: request handling, middleware, dynamic routes.
+The documentation that is presented here offers a comprehensive and elaborate explanation of a custom framework that has been specifically built on top of the Node.js platform. This framework has been designed to provide developers with a powerful and flexible set of tools and functionalities, which can be leveraged for the development of a diverse range of web applications.
 
 ## Reference
 
-Framework allows you to create both controller level and application level middleware where middleware functions are executed on every request regardless of their paths. To pass controller level middleware you have to pass a function that has req nad res objects as parameters, controller level middleware happens on specific route bound to to this middleware, bellow you can see basic usage of the framework.
+The custom framework that has been developed on top of Node.js provides developers with a powerful and flexible set of tools and functionalities, including support for both controller-level and application-level middleware.
+
+When using this framework, developers can choose between two different types of middleware: controller-level and application-level middleware. Controller-level middleware is executed only on a specific route that is bound to the middleware, whereas application-level middleware is executed on every incoming request, regardless of the path.
+
+To implement controller-level middleware in this framework, developers must pass a function as a parameter, which has access to the req and res objects. This function can then perform specific tasks or add custom logic to the request/response flow, such as authentication, data validation, or error handling, among other things.
+
+One advantage of using controller-level middleware is that it can help to reduce the amount of duplicated code that is required in a project, as it allows developers to define common functionality that can be reused across multiple routes. Additionally, this approach can help to improve code organization and maintainability, as it allows developers to separate concerns and keep related logic together in one place.
+
+On the other hand, application-level middleware can be useful for implementing more general functionality that needs to be applied to every incoming request. For example, it can be used to perform CORS handling, set headers, or parse request bodies, among other things.
 
 ```typescript
 const GET_STATS = "/getStats";
@@ -33,12 +41,14 @@ app.get(GET_LEVELS, getLevelData);
 app.post(POST_STATS, sendStatsData);
 ```
 
-server can also serve images and basic static files (the default value for path to look for static files is public), images can be resized and compressed, which happens on multiple threads,
+The framework also provides functionality for serving static files. The default location to look for static files is in the "public" folder. When using the framework, users have the option to resize or compress images using multiple threads based on their preferences.
 
 ## About game
 
-Due to the fact that this framework was mainly created for one of my games, it probably will be extracted to different repository in the future
+The Arkanoid game was the primary motivation behind creating this framework, and it may be extracted into a separate repository in the future. The primary goal of this project was to gain a deeper understanding of Node.js and explore more advanced and hidden usages of the platform.
 
 ## Why ?
 
-I wanted to implement my own framework to give myself better insight of more advanced and "hidden" usages of node. Because this projects was created mainly for learning purposes, it can and likely will change over the time.
+The primary objective of creating this framework was to gain a deeper understanding of Node.js and explore its advanced and lesser-known capabilities. By building a custom framework, I was able to gain more control over the platform, avoid the overhead of existing frameworks, and experiment with more advanced features.
+
+Creating a custom framework allowed me to experiment with more advanced features of Node.js, such as optimizing performance, improving scalability, and implementing new functionality. It also gave me the opportunity to learn more about how Node.js works under the hood, and to gain a deeper understanding of its core concepts and principles.
