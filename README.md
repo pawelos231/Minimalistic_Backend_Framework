@@ -15,8 +15,6 @@ When using this framework, developers can choose between two different types of 
 
 To implement controller-level middleware in this framework, developers must pass a function as a parameter, which has access to the req and res objects. This function can then perform specific tasks or add custom logic to the request/response flow, such as authentication, data validation, or error handling, among other things.
 
-One advantage of using controller-level middleware is that it can help to reduce the amount of duplicated code that is required in a project, as it allows developers to define common functionality that can be reused across multiple routes. Additionally, this approach can help to improve code organization and maintainability, as it allows developers to separate concerns and keep related logic together in one place.
-
 On the other hand, application-level middleware can be useful for implementing more general functionality that needs to be applied to every incoming request. For example, it can be used to perform CORS handling, set headers, or parse request bodies, among other things.
 
 ```typescript
