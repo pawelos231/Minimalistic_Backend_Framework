@@ -22,6 +22,10 @@ export interface RouteHandler {
     (req: any, res: http.ServerResponse): any;
   }
   
+  export interface ControllerMiddleware {
+    (req: any, res: http.ServerResponse): any;
+  }
+
 export interface RouteMiddleware {
     (req: any, res: http.ServerResponse, next: Function): any;
   }
@@ -33,3 +37,5 @@ export  type Routes = {
       [method in RequestType]?: RouteHandler;
     } & { MIDDLEWARE?: RouteMiddleware[] };
   };
+
+

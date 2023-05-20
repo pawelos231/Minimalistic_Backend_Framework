@@ -9,3 +9,5 @@ export const STAIC_FILE_TYPES_EXTENSIONS = {
     json: 'application/json',
     xml: 'application/xml',
   };
+
+  export type StaticFiles = keyof typeof STAIC_FILE_TYPES_EXTENSIONS

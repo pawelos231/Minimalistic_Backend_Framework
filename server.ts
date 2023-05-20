@@ -10,29 +10,42 @@ import { RequestType, Routes, RouteHandler, RouteMiddleware } from './interfaces
 import { isRequestTypeValid } from './helpers/request_type_validation'
 import { STAIC_FILE_TYPES_EXTENSIONS } from './constants/StaticFileTypes'
 import { POST, PUT, PATCH, DELETE, GET, NOT_FOUND } from './constants/responseHelpers'
-import sharp from 'sharp'
+import { ControllerMiddleware } from './interfaces/serverInterface'
+import sharp, { cache } from 'sharp'
+import { DEFAULT_OPTIONS } from './constants/serverOpts'
+import { Options } from './constants/serverOpts'
+import { StaticFiles } from './constants/StaticFileTypes'
+import { InMemoryCache } from './cache/inMemoryCache'
 
+
+type ServerType = http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 
 const MIDDLEWARE = "middleware"
-
 
 export class Server implements ServerInterface {
 
     private routes: Routes = {}
     private middlewares: RouteMiddleware[] = []
+    private serverName: string = "server"
+    private server = null as ServerType
+    private options: Options
+    private memoryCache: InMemoryCache = new InMemoryCache()
 
-    constructor(options = {}){
-        const server = http.createServer(this.handleRequesWithMiddleware.bind(this))
-        server.listen(3002, () => {
-            console.log("listening on port 3002")
+    constructor(options = DEFAULT_OPTIONS as Options){
+        if(options.serverName.length != 0){
+            this.serverName = options.serverName
+        }
+        this.options = options
+        this.server = http.createServer(this.handleRequesWithMiddleware.bind(this))
+        this.server.listen(options.port, () => {
+            console.log(`listening on port ${options.port}`)
         })
     }
 
 
 
     public handleRequesWithMiddleware(req: any, res: http.ServerResponse): void {
-      
-        
+       
              //provide better solution for chekcing what to serve
             let currentMiddlewareIndex: number = 0;
             if(req.url.startsWith("/music")){
@@ -44,6 +57,7 @@ export class Server implements ServerInterface {
             const nextMiddleware = async (): Promise<void> => {
                 const middleware =
                 this.middlewares[currentMiddlewareIndex];
+
                 currentMiddlewareIndex++;
                 
                 if (middleware) {
@@ -59,11 +73,10 @@ export class Server implements ServerInterface {
     }
 
 
-    private addRoute(
-    method: RequestType, 
+    private addRoute(method: RequestType, 
     path:string,  
     handler: RouteHandler, 
-    middleware: RouteMiddleware[] | null = null): void{
+    middleware: ControllerMiddleware[] | null = null): void{
 
         if(!isRequestTypeValid(method.toLowerCase())){
             throw new Error("wrong method")
@@ -83,7 +96,9 @@ export class Server implements ServerInterface {
 
     private bodyReader(req: http.IncomingMessage): Promise<string>{
         return new Promise((resolve, reject) => {
+
             const chunks: Buffer[] = []
+
             req.on("data", (chunk: Buffer): void => {
                 chunks.push(chunk)
             })
@@ -96,13 +111,13 @@ export class Server implements ServerInterface {
         })
     }
 
-    private createWorkerForImageResizing(filePath: string, width: number, height: number): Promise<Buffer>{
+    private createWorkerForImageResizing (filePath: string, width: number, height: number, imageExtension: string): Promise<Buffer>{
 
-        const promise: Promise<Buffer> = new Promise((resolve, reject) => {
+        const ResizeImagePromise: Promise<Buffer> = new Promise((resolve, reject) => {
 
             const worker: Worker = new Worker(
                 './workers/resize-image-worker.ts', 
-                { workerData: {filePath, width, height} });
+                { workerData: {filePath, width, height, imageExtension} });
 
             worker.on("message", (buffer: Buffer) => {
                 resolve(buffer)
@@ -117,30 +132,101 @@ export class Server implements ServerInterface {
               });
             
         })
-        return promise
+        return ResizeImagePromise
+    }
+
+
+    private async handleImageCompress(res: http.ServerResponse, req: any, root: string, width: number, height: number){
+        
+        const filePath = path.join(root, req.url)
+        const imageExtension = path.extname(filePath)
+
+        const cacheKey = `optimized:image:single${filePath}`
+        const cachedItem = this.memoryCache.get<Buffer>(cacheKey)
+
+        if(cachedItem){
+            res.end(cachedItem);
+            return
+        }  
+
+        const image = sharp(filePath);
+
+        image.resize(width, height).toBuffer((err, buffer: Buffer) => {   
+
+            res.writeHead(200, 
+            {'Content-Type': `image/${imageExtension.slice(1)}`});
+
+            this.memoryCache.set(cacheKey, buffer, 
+                this.options.defaultStaticFileCache)
+
+            res.end(buffer);
+            if(err){
+                throw new Error(String(err))
+            }
+        });
+
+    }
+
+
+
+    private handleMultipleImagesCompress(res: http.ServerResponse, req: any, root: string, width: number, height: number){
+        const filesPaths = fs.readdirSync(path.join(root, req.url));
+        const WorkerPromises: Promise<Buffer>[] = [];
+
+               
+        filesPaths.forEach((filePath: string) => {
+
+            const absolutefilePath: string = path.join(root, req.url, filePath);
+            const imageExtension = path.extname(filePath)
+
+            const cacheKey = `optimized:image:multiple${absolutefilePath}`
+            const cachedItem = this.memoryCache.get<Promise<Buffer>>(cacheKey)
+    
+            if(cachedItem){
+                WorkerPromises.push(cachedItem)
+                return
+            }        
+
+            if(!fs.statSync(absolutefilePath).isFile()){
+                res.end("this folder does not contain files only")
+                throw new Error("this folder has not only files in it")
+            }
+            
+            const ImageResizeWorker = this.createWorkerForImageResizing(absolutefilePath, width, height, imageExtension.slice(1))
+
+            this.memoryCache.set(cacheKey, ImageResizeWorker, this.options.defaultStaticFileCache)
+
+            WorkerPromises.push(ImageResizeWorker)
+        });
+                
+        res.writeHead(200, {'Content-Type': 'multipart/mixed'});
+
+        Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
+             res.end(JSON.stringify(buffers))
+        });
     }
 
     private async propagateStatic(req: any, res: http.ServerResponse, pathToPropagate = "public"): Promise<void>{
+
 
         const directoryName: string = pathToPropagate;  
         const root: string = path.normalize(path.resolve(directoryName));
 
         const extension: string = path.extname(req.url).slice(1);
         let type: string = "";
-      
-        
+
             
         (extension in STAIC_FILE_TYPES_EXTENSIONS) ? 
         (type = STAIC_FILE_TYPES_EXTENSIONS
-        [extension as keyof typeof STAIC_FILE_TYPES_EXTENSIONS]) : 
+        [extension as StaticFiles]) : 
         type = STAIC_FILE_TYPES_EXTENSIONS.html
-      
+
         const supportedExtension = Boolean(type);
 
-     
 
         if (!supportedExtension) {
-            res.writeHead(404, { 'Content-Type': 'text/html' });
+            console.log("extension is not supported!")
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('404: File not found');
             return;
         } 
@@ -157,45 +243,10 @@ export class Server implements ServerInterface {
           }
           
 
-   
         if (fs.existsSync(path.join(root, req.url)) && !extension) {
-
-            const files = fs.readdirSync(path.join(root, req.url));
-            const WorkerPromises: Promise<Buffer>[] = [];
-
-               
-                files.forEach((file: string) => {
-                    
-                    const filePath: string = path.join(root, req.url, file);
-
-                    if(!fs.statSync(filePath).isFile()){
-                        res.end("this folder does not contain files only")
-                        throw new Error("this folder has not only files in it")
-                    }
-
-                    WorkerPromises.push(this.createWorkerForImageResizing(filePath, 100, 100))
-                });
-                
-                //to fix
-                res.writeHead(200, {'Content-Type': 'image/jpeg'});
-
-                Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
-                    res.end(JSON.stringify(buffers))
-                });
-               
-                
+            this.handleMultipleImagesCompress(res, req, root, 100, 100)     
         } else {
-
-            const filePath = path.join(root, req.url)
-            const image = sharp(filePath);
-            image.resize(200, 200).toBuffer((err, buffer: Buffer) => {
-                res.setHeader('Content-Type', 'image/jpeg');
-                res.end(buffer);
-                if(err){
-                    throw new Error(String(err))
-                }
-            });
-        
+            this.handleImageCompress(res, req, root, 200, 200)
          }
 
 
@@ -203,9 +254,8 @@ export class Server implements ServerInterface {
 
      
 
-
-
      private async handleRequest(req: any, res: http.ServerResponse){
+
         const keyRoutes: string[] = Object.keys(this.routes)
         let match: boolean = false
 
@@ -258,32 +308,40 @@ export class Server implements ServerInterface {
 
   
     
-    public get(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+    public get(path: string, handler: RouteHandler, ...middleware: ControllerMiddleware[][]){
         this.addRoute(GET, path, handler, flatten2DArray(middleware))
     }
     
 
-    public delete(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+    public delete(path: string, handler: RouteHandler, ...middleware: ControllerMiddleware[][]){
         this.addRoute(DELETE, path, handler, flatten2DArray(middleware))
     }
 
 
-    public put(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+    public put(path: string, handler: RouteHandler, ...middleware: ControllerMiddleware[][]){
         this.addRoute(PUT, path,handler, flatten2DArray(middleware))
     }
 
 
-    public patch(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+    public patch(path: string, handler: RouteHandler, ...middleware: ControllerMiddleware[][]){
         this.addRoute(PATCH, path, handler, flatten2DArray(middleware))
     }
 
 
-    public post(path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]){
+    public post(path: string, handler: RouteHandler, ...middleware: ControllerMiddleware[][]){
         this.addRoute(POST, path, handler, flatten2DArray(middleware))
     }
 
     public use(middleware: RouteMiddleware): void  {
         this.middlewares.push(middleware);
      };
+
+     public shutDown(){
+        console.log("shutting down...")
+        this.server.close(() => {
+            console.log('Server terminated.');
+            process.exit(0);
+        })
+     }
 }
 
