@@ -14,6 +14,8 @@ export interface ServerInterface {
     delete: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
 
     post: (path: string, handler: RouteHandler, ...middleware: RouteMiddleware[][]) => void
+    
+    shutDown: () => void
 }
 
 

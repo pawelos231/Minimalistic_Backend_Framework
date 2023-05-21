@@ -1,0 +1,1 @@
+export const gówno = 4

@@ -11,17 +11,17 @@ import { isRequestTypeValid } from './helpers/request_type_validation'
 import { STAIC_FILE_TYPES_EXTENSIONS } from './constants/StaticFileTypes'
 import { POST, PUT, PATCH, DELETE, GET, NOT_FOUND } from './constants/responseHelpers'
 import { ControllerMiddleware } from './interfaces/serverInterface'
-import sharp from 'sharp'
+import sharp, { versions } from 'sharp'
 import { DEFAULT_OPTIONS } from './constants/serverOpts'
 import { Options } from './constants/serverOpts'
 import { StaticFiles } from './constants/StaticFileTypes'
 import { InMemoryCache } from './cache/inMemoryCache'
 import { OK } from './constants/responseHelpers'
 import { ImageResizeWorkerData } from './interfaces/serverInterface'
-import { ImageTypes } from './constants/StaticFileTypes'
 import { CheckIfExistsInType } from './helpers/TypeCheck'
-import { imageTypesArray } from './constants/StaticFileTypes'
-
+import { imageTypesArray, ImageTypes } from './constants/StaticFileTypes'
+import { FancyError } from './exceptions/AugementedError'
+import { areFilesInFolderImages } from './helpers/getFilesInFolder'
 
 type ServerType = http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 
@@ -120,7 +120,8 @@ export class Server implements ServerInterface {
 
     private createWorkerForImageResizing (filePath: string, width: number, height: number, imageExtension: ImageTypes): Promise<Buffer>{
 
-        const ResizeImagePromise: Promise<Buffer> = new Promise((resolve, reject) => {
+        const ResizeImagePromise: 
+        Promise<Buffer> = new Promise((resolve, reject) => {
             const absolute = path.resolve('./workers/resize-image-worker.ts')
 
 
@@ -149,11 +150,23 @@ export class Server implements ServerInterface {
     private async handleImageCompress(res: http.ServerResponse, req: any, root: string, width: number, height: number){
         
         const filePath = path.join(root, req.url)
+
+        fs.access(filePath, fs.constants.F_OK, (err) => {
+            if (err) {
+              console.error(`File ${req.url} does not exist`);
+              return;
+            }
+        })
+
         const imageExtension = path.extname(filePath)
 
-        const cacheKey = `optimized:image:single${filePath}`
+        const cacheKey = `optimized:image:single${filePath}:${width}:${height}`
         const cachedItem = this.memoryCache.get<Buffer>(cacheKey)
 
+        if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)){
+            throw new FancyError("INCORRECT IMAGE TYPE")
+        }
+        
         if(cachedItem){
             res.end(cachedItem);
             return
@@ -188,14 +201,16 @@ export class Server implements ServerInterface {
 
             const absolutefilePath: string = path.join(root, req.url, filePath);
             const imageExtension = path.extname(filePath)
+
+            const cacheKey = 
+            `optimized:image:multiple${absolutefilePath}:${width}:${height}`
+
+            const cachedItem = this.memoryCache.get<Promise<Buffer>>(cacheKey)
             
-            if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray  as unknown as  ImageTypes[])){
-                return false
+            if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)){
+                throw new FancyError("INCORRECT IMAGE TYPE")
             }
 
-            const cacheKey = `optimized:image:multiple${absolutefilePath}`
-            const cachedItem = this.memoryCache.get<Promise<Buffer>>(cacheKey)
-    
             if(cachedItem){
                 WorkerPromises.push(cachedItem)
                 return
@@ -206,7 +221,8 @@ export class Server implements ServerInterface {
                 throw new Error("this folder has not only files in it")
             }
             
-            const ImageResizeWorker = this.createWorkerForImageResizing(absolutefilePath, width, height, imageExtension.slice(1) as ImageTypes)
+            const ImageResizeWorker = 
+            this.createWorkerForImageResizing(absolutefilePath, width, height, imageExtension.slice(1) as ImageTypes)
 
             this.memoryCache.set(cacheKey, ImageResizeWorker, this.options.staticFileCacheTime)
 
@@ -219,6 +235,8 @@ export class Server implements ServerInterface {
              res.end(JSON.stringify(buffers))
         });
     }
+
+
 
     private async propagateStatic(req: any, res: http.ServerResponse, pathToPropagate = "public"): Promise<void>{
 
@@ -255,11 +273,19 @@ export class Server implements ServerInterface {
               fileName = path.join(req.url, 'index.html');
             }
           }
-          
+    
+        const absolutePath = path.join(root, req.url)
+        console.log(absolutePath)
+        const areImages: boolean = 
+        await areFilesInFolderImages(absolutePath)
 
-        if (fs.existsSync(path.join(root, req.url)) && !extension) {
+        const isImage = CheckIfExistsInType(extension, imageTypesArray)
+
+        const pathExists = fs.existsSync(absolutePath)
+
+        if (pathExists && !extension && areImages) {
             this.handleMultipleImagesCompress(res, req, root, 100, 100)     
-        } else {
+        } else if(isImage) {
             this.handleImageCompress(res, req, root, 200, 200)
          }
 
