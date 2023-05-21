@@ -1,4 +1,5 @@
 import http from 'http'
+import { ImageTypes } from '../constants/StaticFileTypes'
 export interface ServerInterface {
     handleRequesWithMiddleware: (req: any, res: any) => void
 
@@ -39,3 +40,9 @@ export  type Routes = {
   };
 
 
+export type ImageResizeWorkerData = {
+    filePath: string;
+    width: number;
+    height: number;
+    imageExtension: ImageTypes;
+}

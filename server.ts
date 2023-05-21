@@ -11,11 +11,16 @@ import { isRequestTypeValid } from './helpers/request_type_validation'
 import { STAIC_FILE_TYPES_EXTENSIONS } from './constants/StaticFileTypes'
 import { POST, PUT, PATCH, DELETE, GET, NOT_FOUND } from './constants/responseHelpers'
 import { ControllerMiddleware } from './interfaces/serverInterface'
-import sharp, { cache } from 'sharp'
+import sharp from 'sharp'
 import { DEFAULT_OPTIONS } from './constants/serverOpts'
 import { Options } from './constants/serverOpts'
 import { StaticFiles } from './constants/StaticFileTypes'
 import { InMemoryCache } from './cache/inMemoryCache'
+import { OK } from './constants/responseHelpers'
+import { ImageResizeWorkerData } from './interfaces/serverInterface'
+import { ImageTypes } from './constants/StaticFileTypes'
+import { CheckIfExistsInType } from './helpers/TypeCheck'
+import { imageTypesArray } from './constants/StaticFileTypes'
 
 
 type ServerType = http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
@@ -32,9 +37,11 @@ export class Server implements ServerInterface {
     private memoryCache: InMemoryCache = new InMemoryCache()
 
     constructor(options = DEFAULT_OPTIONS as Options){
+
         if(options.serverName.length != 0){
             this.serverName = options.serverName
         }
+
         this.options = options
         this.server = http.createServer(this.handleRequesWithMiddleware.bind(this))
         this.server.listen(options.port, () => {
@@ -111,13 +118,16 @@ export class Server implements ServerInterface {
         })
     }
 
-    private createWorkerForImageResizing (filePath: string, width: number, height: number, imageExtension: string): Promise<Buffer>{
+    private createWorkerForImageResizing (filePath: string, width: number, height: number, imageExtension: ImageTypes): Promise<Buffer>{
 
         const ResizeImagePromise: Promise<Buffer> = new Promise((resolve, reject) => {
+            const absolute = path.resolve('./workers/resize-image-worker.ts')
 
-            const worker: Worker = new Worker(
-                './workers/resize-image-worker.ts', 
-                { workerData: {filePath, width, height, imageExtension} });
+
+            const workerData: ImageResizeWorkerData = 
+            {filePath, width, height, imageExtension}
+
+            const worker: Worker = new Worker(absolute, { workerData });
 
             worker.on("message", (buffer: Buffer) => {
                 resolve(buffer)
@@ -153,11 +163,11 @@ export class Server implements ServerInterface {
 
         image.resize(width, height).toBuffer((err, buffer: Buffer) => {   
 
-            res.writeHead(200, 
+            res.writeHead(OK, 
             {'Content-Type': `image/${imageExtension.slice(1)}`});
 
             this.memoryCache.set(cacheKey, buffer, 
-                this.options.defaultStaticFileCache)
+                this.options.staticFileCacheTime)
 
             res.end(buffer);
             if(err){
@@ -178,6 +188,10 @@ export class Server implements ServerInterface {
 
             const absolutefilePath: string = path.join(root, req.url, filePath);
             const imageExtension = path.extname(filePath)
+            
+            if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray  as unknown as  ImageTypes[])){
+                return false
+            }
 
             const cacheKey = `optimized:image:multiple${absolutefilePath}`
             const cachedItem = this.memoryCache.get<Promise<Buffer>>(cacheKey)
@@ -192,14 +206,14 @@ export class Server implements ServerInterface {
                 throw new Error("this folder has not only files in it")
             }
             
-            const ImageResizeWorker = this.createWorkerForImageResizing(absolutefilePath, width, height, imageExtension.slice(1))
+            const ImageResizeWorker = this.createWorkerForImageResizing(absolutefilePath, width, height, imageExtension.slice(1) as ImageTypes)
 
-            this.memoryCache.set(cacheKey, ImageResizeWorker, this.options.defaultStaticFileCache)
+            this.memoryCache.set(cacheKey, ImageResizeWorker, this.options.staticFileCacheTime)
 
             WorkerPromises.push(ImageResizeWorker)
         });
                 
-        res.writeHead(200, {'Content-Type': 'multipart/mixed'});
+        res.writeHead(OK, {'Content-Type': 'multipart/mixed'});
 
         Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
              res.end(JSON.stringify(buffers))
@@ -226,7 +240,7 @@ export class Server implements ServerInterface {
 
         if (!supportedExtension) {
             console.log("extension is not supported!")
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.writeHead(NOT_FOUND, { 'Content-Type': 'text/plain' });
             res.end('404: File not found');
             return;
         } 
@@ -294,7 +308,7 @@ export class Server implements ServerInterface {
 
 
         if (!match) {
-            res.statusCode = NOT_FOUND;
+            res.writeHead(NOT_FOUND, { 'Content-Type': 'text/html' });
 
             const file: string = fs.readFileSync(path.resolve(__dirname, 'views', '404.html'), {
                 encoding: "utf-8"

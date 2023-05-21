@@ -11,3 +11,7 @@ export const STAIC_FILE_TYPES_EXTENSIONS = {
   };
 
   export type StaticFiles = keyof typeof STAIC_FILE_TYPES_EXTENSIONS
+  
+  export const imageTypesArray = ["jpg", "jpeg", "png"] as const
+
+  export type ImageTypes = typeof imageTypesArray[number]
