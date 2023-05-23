@@ -147,6 +147,77 @@ export class Server implements ServerInterface {
     }
 
 
+
+    private handleImage(res: http.ServerResponse, req: any, root: string){
+
+        const filePath = path.join(root, req.url)
+
+        fs.access(filePath, fs.constants.F_OK, (err) => {
+            if (err) {
+              console.error(`File ${req.url} does not exist`);
+              return;
+            }
+        })
+
+        const imageExtension = path.extname(filePath)
+
+        if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)){
+            throw new FancyError("INCORRECT IMAGE TYPE")
+        }
+
+        const fileStream = fs.createReadStream(filePath)
+        fileStream.pipe(res)
+    }
+
+
+
+    private handleMultipleImages(res: http.ServerResponse, req: any, root: string) {
+
+    try{
+        const filesPaths: string[] = fs.readdirSync(path.join(root, req.url));
+
+        if (filesPaths.length === 0) {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('No files found in the folder.');
+            return;
+        }
+
+        const fileBuffers: Uint8Array[] = [];
+        filesPaths.forEach((filePath: string) => {
+            
+             const absolutefilePath: string = path.join(root, req.url, filePath);
+             const imageExtension = path.extname(filePath)
+ 
+ 
+             if(!fs.statSync(absolutefilePath).isFile()){
+                 res.end("this folder does not contain files only")
+                 throw new FancyError("this folder has not only files in it")
+             }
+             
+             if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)){
+                 throw new FancyError("INCORRECT IMAGE TYPE")
+             }
+ 
+             const fileBuffer = fs.readFileSync(absolutefilePath);
+             const fileArray = new Uint8Array(fileBuffer);
+             fileBuffers.push(fileArray);
+
+
+        })
+
+        res.writeHead(OK, {'Content-Type': 'multipart/mixed'});
+        res.end(JSON.stringify(fileBuffers))
+        
+    } 
+
+    catch(err){
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('An error occurred while processing the request. /handle images', err);
+            throw new FancyError("error while reading images / no compress")   
+        }  
+    }
+
+    
     private async handleImageCompress(res: http.ServerResponse, req: any, root: string, width: number, height: number){
         
         const filePath = path.join(root, req.url)
@@ -193,7 +264,9 @@ export class Server implements ServerInterface {
 
 
     private handleMultipleImagesCompress(res: http.ServerResponse, req: any, root: string, width: number, height: number){
-        const filesPaths = fs.readdirSync(path.join(root, req.url));
+
+    try{
+        const filesPaths: string[] = fs.readdirSync(path.join(root, req.url));
         const WorkerPromises: Promise<Buffer>[] = [];
 
                
@@ -234,6 +307,45 @@ export class Server implements ServerInterface {
         Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
              res.end(JSON.stringify(buffers))
         });
+    } 
+    catch(err){
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('An error occurred while processing the request. /handle images', err);
+        throw new FancyError("error while reading images / compress")   
+    }
+}
+
+    private async serveMultipleFilesByExtension(req: any, res: http.ServerResponse, root: string){
+
+        const absolutePath = path.join(root, req.url)
+        const areImages = areFilesInFolderImages(absolutePath)
+        const pathExists = fs.existsSync(absolutePath)
+
+        if(areImages && pathExists){
+            if(this.options.compressImages){
+                this.handleMultipleImagesCompress(res, req, root, 150, 150)
+            }else {
+                this.handleMultipleImages(res, req, root)
+            }
+        }
+    }
+
+
+
+    private async serveFileByExtension(extension: StaticFiles, req: any, res: http.ServerResponse, root: string){
+
+        const isImage = CheckIfExistsInType(extension, imageTypesArray)
+        const absolutePath = path.join(root, req.url)
+        const pathExists = fs.existsSync(absolutePath)
+
+       if(isImage && pathExists) {
+            if(this.options.compressImages){
+                this.handleImageCompress(res, req, root, 200, 200)
+            } else {
+                this.handleImage(res, req, root)
+            }
+         }
+        
     }
 
 
@@ -261,34 +373,14 @@ export class Server implements ServerInterface {
             res.writeHead(NOT_FOUND, { 'Content-Type': 'text/plain' });
             res.end('404: File not found');
             return;
-        } 
+        }
 
-        let fileName = req.url;
-
-        if (!extension) {
-            try {
-              fs.accessSync(path.join(root, req.url + '.html'), fs.constants.F_OK);
-              fileName = req.url + '.html';
-            } catch (e) {
-              fileName = path.join(req.url, 'index.html');
-            }
-          }
-    
-        const absolutePath = path.join(root, req.url)
-        console.log(absolutePath)
-        const areImages: boolean = 
-        await areFilesInFolderImages(absolutePath)
-
-        const isImage = CheckIfExistsInType(extension, imageTypesArray)
-
-        const pathExists = fs.existsSync(absolutePath)
-
-        if (pathExists && !extension && areImages) {
-            this.handleMultipleImagesCompress(res, req, root, 100, 100)     
-        } else if(isImage) {
-            this.handleImageCompress(res, req, root, 200, 200)
-         }
-
+        if (!Boolean(extension)) {
+            console.log("no extension, check if there are static files in")
+            this.serveMultipleFilesByExtension(req, res, root)
+        } else {
+            this.serveFileByExtension(extension as StaticFiles, req,  res, root) 
+        }
 
     }
 

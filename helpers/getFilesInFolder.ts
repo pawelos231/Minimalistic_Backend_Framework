@@ -18,6 +18,7 @@ export function getFilesInFolder(folderPath: string): Promise<string[]> {
 
   export const areFilesInFolderImages = async (folderPath: string) => {
     const stats = fs.statSync(folderPath);
+    
     if(!stats.isDirectory()){
         console.log("path is not a folder")
         return false 
