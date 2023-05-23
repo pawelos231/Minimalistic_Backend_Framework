@@ -28,6 +28,7 @@ export class InMemoryCache {
         this.cache.set(key, cachedItem)
 
     }
+    
     delete(key: string): void {
         this.cache.delete(key);
     }

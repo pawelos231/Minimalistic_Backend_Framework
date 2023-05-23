@@ -1,5 +1,5 @@
 export const DEFAULT_OPTIONS: Options = {
-    compressImages: false,
+    compressImages: true,
     serverName: "",
     port: 3002,
     cacheStatic: true,
