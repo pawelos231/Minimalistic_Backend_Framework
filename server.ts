@@ -1,27 +1,31 @@
 import http from 'http'
 import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
+import { Worker } from 'worker_threads';
 import { parseUrl } from './helpers/urlParser'
 import { flatten2DArray } from './helpers/flatten'
 import { processMiddleware } from './middleware/process'
-import { ServerInterface } from './interfaces/serverInterface'
-import { Worker } from 'worker_threads';
-import { RequestType, Routes, RouteHandler, RouteMiddleware } from './interfaces/serverInterface'
 import { isRequestTypeValid } from './helpers/request_type_validation'
+import { CheckIfExistsInType } from './helpers/TypeCheck'
+import { areFilesInFolderImages } from './helpers/getFilesInFolder'
 import { STAIC_FILE_TYPES_EXTENSIONS } from './constants/StaticFileTypes'
-import { POST, PUT, PATCH, DELETE, GET, NOT_FOUND } from './constants/responseHelpers'
-import { ControllerMiddleware } from './interfaces/serverInterface'
-import sharp, { versions } from 'sharp'
+import { POST, PUT, PATCH, DELETE, GET, NOT_FOUND, OK } from './constants/responseHelpers'
 import { DEFAULT_OPTIONS } from './constants/serverOpts'
 import { Options } from './constants/serverOpts'
 import { StaticFiles } from './constants/StaticFileTypes'
-import { InMemoryCache } from './cache/inMemoryCache'
-import { OK } from './constants/responseHelpers'
-import { ImageResizeWorkerData } from './interfaces/serverInterface'
-import { CheckIfExistsInType } from './helpers/TypeCheck'
 import { imageTypesArray, ImageTypes } from './constants/StaticFileTypes'
+import { InMemoryCache } from './cache/inMemoryCache'
 import { FancyError } from './exceptions/AugementedError'
-import { areFilesInFolderImages } from './helpers/getFilesInFolder'
+import { 
+    ControllerMiddleware, 
+    ImageResizeWorkerData,  
+    RequestType, 
+    Routes,
+    RouteHandler, 
+    RouteMiddleware, 
+    ServerInterface  
+} from './interfaces/serverInterface'
 
 type ServerType = http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 
@@ -178,8 +182,7 @@ export class Server implements ServerInterface {
 
         if (filesPaths.length === 0) {
             res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('No files found in the folder.');
-            return;
+            return res.end('No files found in the folder.');
         }
 
         const fileBuffers: Uint8Array[] = [];
@@ -239,8 +242,7 @@ export class Server implements ServerInterface {
         }
         
         if(cachedItem){
-            res.end(cachedItem);
-            return
+            return res.end(cachedItem);
         }  
 
         const image = sharp(filePath);
@@ -254,6 +256,7 @@ export class Server implements ServerInterface {
                 this.options.staticFileCacheTime)
 
             res.end(buffer);
+
             if(err){
                 throw new Error(String(err))
             }
@@ -285,8 +288,7 @@ export class Server implements ServerInterface {
             }
 
             if(cachedItem){
-                WorkerPromises.push(cachedItem)
-                return
+                return WorkerPromises.push(cachedItem)
             }        
 
             if(!fs.statSync(absolutefilePath).isFile()){

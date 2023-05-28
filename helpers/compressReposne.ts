@@ -1,1 +1,1 @@
-export const gówno = 4
+export const n = 4
