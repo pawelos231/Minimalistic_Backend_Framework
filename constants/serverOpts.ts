@@ -4,7 +4,7 @@ export const DEFAULT_OPTIONS: Options = {
     port: 3002,
     cacheStatic: true,
     staticFileCacheTime: 60,
-    rootDirectory: "public",
+    rootDirectory: "/public",
     compressionResposne: false,
     compressionThreshold: 0,
 }

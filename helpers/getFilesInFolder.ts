@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { CheckIfExistsInType } from './TypeCheck';
-import { imageTypesArray } from '../constants/StaticFileTypes';
+import { imageTypesArray } from '../constants/StaticFileTypes'
 
 export function getFilesInFolder(folderPath: string): Promise<string[]> {
     return new Promise<string[]>((resolve, reject) => {

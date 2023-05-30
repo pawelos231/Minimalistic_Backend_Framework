@@ -29,6 +29,13 @@ import {
 
 type ServerType = http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 
+type WorkerProps = {
+    filePath: string
+    width: number
+    height: number
+    imageExtension: ImageTypes
+}
+
 const MIDDLEWARE = "middleware"
 
 export class Server implements ServerInterface {
@@ -37,10 +44,10 @@ export class Server implements ServerInterface {
     private middlewares: RouteMiddleware[] = []
     private serverName: string = "server"
     private server = null as ServerType
-    private options: Options
+    private options: Options = DEFAULT_OPTIONS
     private memoryCache: InMemoryCache = new InMemoryCache()
 
-    constructor(options = DEFAULT_OPTIONS as Options){
+    constructor(options = DEFAULT_OPTIONS){
 
         if(options.serverName.length != 0){
             this.serverName = options.serverName
@@ -59,7 +66,7 @@ export class Server implements ServerInterface {
        
              //provide better solution for chekcing what to serve
             let currentMiddlewareIndex: number = 0;
-            if(req.url.startsWith("/music")){
+            if(req.url.startsWith(this.options.rootDirectory)){
                 this.propagateStatic(req, res)
                 return
             }
@@ -122,17 +129,17 @@ export class Server implements ServerInterface {
         })
     }
 
-    private createWorkerForImageResizing (filePath: string, width: number, height: number, imageExtension: ImageTypes): Promise<Buffer>{
+    private createWorkerForImageResizing ({filePath, width, height, imageExtension}: WorkerProps): Promise<Buffer>{
 
         const ResizeImagePromise: 
         Promise<Buffer> = new Promise((resolve, reject) => {
-            const absolute = path.resolve('./workers/resize-image-worker.ts')
 
+            const workerPath = path.resolve('./workers/resize-image-worker.ts')
 
             const workerData: ImageResizeWorkerData = 
             {filePath, width, height, imageExtension}
 
-            const worker: Worker = new Worker(absolute, { workerData });
+            const worker: Worker = new Worker(workerPath, { workerData });
 
             worker.on("message", (buffer: Buffer) => {
                 resolve(buffer)
@@ -296,8 +303,16 @@ export class Server implements ServerInterface {
                 throw new Error("this folder has not only files in it")
             }
             
+
+            const resizeData: WorkerProps = {
+                filePath: absolutefilePath,
+                width,
+                height,
+                imageExtension: imageExtension.slice(1) as ImageTypes
+            }
+
             const ImageResizeWorker = 
-            this.createWorkerForImageResizing(absolutefilePath, width, height, imageExtension.slice(1) as ImageTypes)
+            this.createWorkerForImageResizing(resizeData)
 
             this.memoryCache.set(cacheKey, ImageResizeWorker, this.options.staticFileCacheTime)
 
@@ -324,6 +339,7 @@ export class Server implements ServerInterface {
         const pathExists = fs.existsSync(absolutePath)
 
         if(areImages && pathExists){
+            console.log("files are images")
             if(this.options.compressImages){
                 this.handleMultipleImagesCompress(res, req, root, 150, 150)
             }else {
@@ -356,7 +372,8 @@ export class Server implements ServerInterface {
 
 
         const directoryName: string = pathToPropagate;  
-        const root: string = path.normalize(path.resolve(directoryName));
+        const root: string = path.normalize(path.resolve(directoryName)).replace(pathToPropagate, "");
+
 
         const extension: string = path.extname(req.url).slice(1);
         let type: string = "";
@@ -477,5 +494,6 @@ export class Server implements ServerInterface {
             process.exit(0);
         })
      }
+     
 }
 

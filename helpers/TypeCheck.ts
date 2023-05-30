@@ -1,8 +1,8 @@
-export const CheckIfExistsInType = <K, T extends Array<any>>(maybeCorrectType: K, valuesArray: T): K | false =>{
+export const CheckIfExistsInType = <K, T extends readonly any[]>(maybeCorrectType: K, valuesArray: T): boolean =>{
 
     const itemInArray: K = valuesArray.find(item => item == maybeCorrectType)
 
-    if(itemInArray) return itemInArray  
+    if(itemInArray) return true  
 
     else return false
     
