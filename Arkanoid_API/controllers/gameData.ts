@@ -17,12 +17,13 @@ export const sendStatsData = (req: any, res: Response) => {
 }
 
 export const getLevelData = async (req: any, res: Response) => {
+    console.log("gówno")
     levelTransform()
-    const file: string = fs.readFileSync("./data/formattedLevels.txt", {
+    const file: string = fs.readFileSync("./Arkanoid_API/data/formattedLevels.txt", {
         encoding: "utf-8"
     })
-    res.write(JSON.stringify(file))
-    res.end()
+    console.log(file)
+    return res.end(JSON.stringify(file))
 }
 
 

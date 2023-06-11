@@ -6,4 +6,7 @@ level: 5, numberOfRows: 3, numberOfColumns: 8, lives: 3, timer: 600
 level: 6, numberOfRows: 3, numberOfColumns: 8, lives: 4, timer: 500
 level: 7, numberOfRows: 3, numberOfColumns: 8, lives: 3, timer: 400
 level: 8, numberOfRows: 3, numberOfColumns: 8, lives: 3, timer: 300
+level: 9, numberOfRows: 3, numberOfColumns: 8, lives: 4, timer: 500
+level: 10, numberOfRows: 3, numberOfColumns: 8, lives: 3, timer: 400
+level: 11, numberOfRows: 3, numberOfColumns: 8, lives: 3, timer: 300
 
