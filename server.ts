@@ -26,6 +26,7 @@ import {
     RouteMiddleware, 
     ServerInterface  
 } from './interfaces/serverInterface'
+import { INCORRECT_FILE_TYPE } from './constants/errorMessages';
 
 type ServerType = http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>
 
@@ -173,7 +174,7 @@ export class Server implements ServerInterface {
         const imageExtension = path.extname(filePath)
 
         if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)){
-            throw new FancyError("INCORRECT IMAGE TYPE")
+            throw new FancyError(INCORRECT_FILE_TYPE)
         }
 
         const fileStream = fs.createReadStream(filePath)
@@ -205,7 +206,7 @@ export class Server implements ServerInterface {
              }
              
              if(!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)){
-                 throw new FancyError("INCORRECT IMAGE TYPE")
+                 throw new FancyError(INCORRECT_FILE_TYPE)
              }
  
              const fileBuffer = fs.readFileSync(absolutefilePath);
@@ -436,7 +437,7 @@ export class Server implements ServerInterface {
                 req.body = await this.bodyReader(req)
 
               
-                handler(req, res)
+                await handler(req, res)
 
                 match = true
                 break;

@@ -1,8 +1,8 @@
 import http from 'http'
 import fs from "fs"
 import { Server } from "./server"
-import { getStatsData, sendStatsData, getLevelData, sendLevelData} from "./Arkanoid_API/controllers/gameData"
-import { GET_STATS, POST_STATS, GET_LEVELS, GET_EDITOR_LEVELS } from "./Arkanoid_API/constants/routes"
+import { getStatsData, sendStatsData, getLevelData, sendLevelData, getLevels} from "./Arkanoid_API/controllers/gameData"
+import { GET_STATS, POST_STATS, GET_LEVELS, GET_EDITOR_LEVELS, GET_LEVELS_MODIFIED } from "./Arkanoid_API/constants/routes"
 import { AllowCors } from "./middleware/cors"
 
 
@@ -21,6 +21,7 @@ app.get(GET_STATS, getStatsData, [auth2])
 app.get(GET_LEVELS, getLevelData)
 app.post(POST_STATS, sendStatsData)
 app.post(GET_EDITOR_LEVELS, sendLevelData)
+app.get(GET_LEVELS_MODIFIED, getLevels)
 
 
 app.get("/nie", (req: any, res: http.ServerResponse) => {

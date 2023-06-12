@@ -17,7 +17,6 @@ export const sendStatsData = (req: any, res: Response) => {
 }
 
 export const getLevelData = async (req: any, res: Response) => {
-    console.log("gówno")
     levelTransform()
     const file: string = fs.readFileSync("./Arkanoid_API/data/formattedLevels.txt", {
         encoding: "utf-8"
@@ -80,4 +79,39 @@ export const sendLevelData = async (req: any, res: Response) => {
     res.end(JSON.stringify("File created successfully"))
    
   };
+
+
+  export const getLevels = async (req: Request, res: Response) => {
+    const directoryPath = path.resolve('./Arkanoid_API/levele');
   
+    try {
+      const files = await fs.promises.readdir(directoryPath);
+  
+      const fileDataArray = await Promise.all(files.map(async (file) => {
+        const filePath = path.join(directoryPath, file);
+        let chunks = '';
+  
+        const stream = fs.createReadStream(filePath);
+  
+        return new Promise<string>((resolve, reject) => {
+          stream.on('data', (data) => {
+            chunks += data;
+          });
+  
+          stream.on('end', () => {
+            resolve(JSON.parse(chunks));
+          });
+  
+          stream.on('error', (err) => {
+            reject(err);
+          });
+        });
+      }));
+      res.end(JSON.stringify(fileDataArray));
+    } catch (error) {
+
+      console.error('Error reading folder:', error);
+      res.end(JSON.stringify({ error: 'Internal Server Error' }));
+    }
+  };
+    
