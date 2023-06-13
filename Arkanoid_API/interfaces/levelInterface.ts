@@ -1,9 +1,10 @@
 export type Brick = {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    rowNumber: number
+    columnNumber: number
     color: string
+    timesToHit: number, 
+    points: number, 
+    buffDropRate:number
 }
 
 export interface Level {
