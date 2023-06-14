@@ -1,3 +1,1 @@
-export const normalizePathName = () => {
-    
-}
+export const normalizePathName = () => {};

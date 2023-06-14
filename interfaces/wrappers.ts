@@ -1,3 +1,3 @@
-import http from 'http'
+import http from "http";
 
-export type Response = http.ServerResponse<http.IncomingMessage>
+export type Response = http.ServerResponse<http.IncomingMessage>;
