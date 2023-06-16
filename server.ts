@@ -1,8 +1,6 @@
 import http from "http";
 import fs from "fs";
 import path from "path";
-import sharp from "sharp";
-import { Worker } from "worker_threads";
 import { parseUrl } from "./helpers/urlParser";
 import { flatten2DArray } from "./helpers/flatten";
 import { processMiddleware } from "./middleware/process";
@@ -27,26 +25,18 @@ import { InMemoryCache } from "./cache/inMemoryCache";
 import { FancyError } from "./exceptions/AugementedError";
 import {
   ControllerMiddleware,
-  ImageResizeWorkerData,
   RequestType,
   Routes,
   RouteHandler,
   RouteMiddleware,
   ServerInterface,
 } from "./interfaces/serverInterface";
-import { INCORRECT_FILE_TYPE } from "./constants/errorMessages";
+import { ImageHandler } from "./services/imageHandler";
 
 type ServerType = http.Server<
   typeof http.IncomingMessage,
   typeof http.ServerResponse
 >;
-
-type WorkerProps = {
-  filePath: string;
-  width: number;
-  height: number;
-  imageExtension: ImageTypes;
-};
 
 const MIDDLEWARE = "middleware";
 
@@ -57,9 +47,10 @@ export class Server implements ServerInterface {
   private server = null as ServerType;
   private options: Options = DEFAULT_OPTIONS;
   private memoryCache: InMemoryCache = new InMemoryCache();
+  private imageHanlder: ImageHandler;
 
   constructor(options = DEFAULT_OPTIONS) {
-    if (options.serverName.length != 0) {
+    if (options.serverName.length !== 0) {
       this.serverName = options.serverName;
     }
 
@@ -68,10 +59,10 @@ export class Server implements ServerInterface {
     this.server.listen(options.port, () => {
       console.log(`listening on port ${options.port}`);
     });
+    this.imageHanlder = new ImageHandler(this.memoryCache, this.options);
   }
 
   public handleRequesWithMiddleware(req: any, res: http.ServerResponse): void {
-    //provide better solution for chekcing what to serve
     let currentMiddlewareIndex: number = 0;
     if (req.url.startsWith(this.options.rootDirectory)) {
       this.propagateStatic(req, res);
@@ -129,214 +120,6 @@ export class Server implements ServerInterface {
     });
   }
 
-  private createWorkerForImageResizing({
-    filePath,
-    width,
-    height,
-    imageExtension,
-  }: WorkerProps): Promise<Buffer> {
-    const ResizeImagePromise: Promise<Buffer> = new Promise(
-      (resolve, reject) => {
-        const workerPath = path.resolve("./workers/resize-image-worker.ts");
-
-        const workerData: ImageResizeWorkerData = {
-          filePath,
-          width,
-          height,
-          imageExtension,
-        };
-
-        const worker: Worker = new Worker(workerPath, { workerData });
-
-        worker.on("message", (buffer: Buffer) => {
-          resolve(buffer);
-        });
-        worker.on("error", (err: Error) => {
-          reject(err);
-        });
-        worker.on("exit", (code: number) => {
-          if (code !== 0) {
-            reject(new Error(`Worker stopped with exit code ${code}`));
-          }
-        });
-      }
-    );
-    return ResizeImagePromise;
-  }
-
-  private handleImage(res: http.ServerResponse, req: any, root: string) {
-    const filePath = path.join(root, req.url);
-
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
-        console.error(`File ${req.url} does not exist`);
-        return;
-      }
-    });
-
-    const imageExtension = path.extname(filePath);
-
-    if (!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)) {
-      throw new FancyError(INCORRECT_FILE_TYPE);
-    }
-
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-  }
-
-  private handleMultipleImages(
-    res: http.ServerResponse,
-    req: any,
-    root: string
-  ) {
-    try {
-      const filesPaths: string[] = fs.readdirSync(path.join(root, req.url));
-
-      if (filesPaths.length === 0) {
-        res.writeHead(404, { "Content-Type": "text/plain" });
-        return res.end("No files found in the folder.");
-      }
-
-      const fileBuffers: Uint8Array[] = [];
-      filesPaths.forEach((filePath: string) => {
-        const absolutefilePath: string = path.join(root, req.url, filePath);
-        const imageExtension = path.extname(filePath);
-
-        if (!fs.statSync(absolutefilePath).isFile()) {
-          res.end("this folder does not contain files only");
-          throw new FancyError("this folder has not only files in it");
-        }
-
-        if (!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)) {
-          throw new FancyError(INCORRECT_FILE_TYPE);
-        }
-
-        const fileBuffer = fs.readFileSync(absolutefilePath);
-        const fileArray = new Uint8Array(fileBuffer);
-        fileBuffers.push(fileArray);
-      });
-
-      res.writeHead(OK, { "Content-Type": "multipart/mixed" });
-      res.end(JSON.stringify(fileBuffers));
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "text/plain" });
-      res.end(
-        "An error occurred while processing the request. /handle images",
-        err
-      );
-      throw new FancyError("error while reading images / no compress");
-    }
-  }
-
-  private async handleImageCompress(
-    res: http.ServerResponse,
-    req: any,
-    root: string,
-    width: number,
-    height: number
-  ) {
-    const filePath = path.join(root, req.url);
-
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
-        console.error(`File ${req.url} does not exist`);
-        return;
-      }
-    });
-
-    const imageExtension = path.extname(filePath);
-
-    const cacheKey = `optimized:image:single${filePath}:${width}:${height}`;
-    const cachedItem = this.memoryCache.get<Buffer>(cacheKey);
-
-    if (!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)) {
-      throw new FancyError("INCORRECT IMAGE TYPE");
-    }
-
-    if (cachedItem) {
-      return res.end(cachedItem);
-    }
-
-    const image = sharp(filePath);
-
-    image.resize(width, height).toBuffer((err, buffer: Buffer) => {
-      res.writeHead(OK, { "Content-Type": `image/${imageExtension.slice(1)}` });
-
-      this.memoryCache.set(cacheKey, buffer, this.options.staticFileCacheTime);
-
-      res.end(buffer);
-
-      if (err) {
-        throw new Error(String(err));
-      }
-    });
-  }
-
-  private handleMultipleImagesCompress(
-    res: http.ServerResponse,
-    req: any,
-    root: string,
-    width: number,
-    height: number
-  ) {
-    try {
-      const filesPaths: string[] = fs.readdirSync(path.join(root, req.url));
-      const WorkerPromises: Promise<Buffer>[] = [];
-
-      filesPaths.forEach((filePath: string) => {
-        const absolutefilePath: string = path.join(root, req.url, filePath);
-        const imageExtension = path.extname(filePath);
-
-        const cacheKey = `optimized:image:multiple${absolutefilePath}:${width}:${height}`;
-
-        const cachedItem = this.memoryCache.get<Promise<Buffer>>(cacheKey);
-
-        if (!CheckIfExistsInType(imageExtension.slice(1), imageTypesArray)) {
-          throw new FancyError("INCORRECT IMAGE TYPE");
-        }
-
-        if (cachedItem) {
-          return WorkerPromises.push(cachedItem);
-        }
-
-        if (!fs.statSync(absolutefilePath).isFile()) {
-          res.end("this folder does not contain files only");
-          throw new Error("this folder has not only files in it");
-        }
-
-        const resizeData: WorkerProps = {
-          filePath: absolutefilePath,
-          width,
-          height,
-          imageExtension: imageExtension.slice(1) as ImageTypes,
-        };
-
-        const ImageResizeWorker = this.createWorkerForImageResizing(resizeData);
-
-        this.memoryCache.set(
-          cacheKey,
-          ImageResizeWorker,
-          this.options.staticFileCacheTime
-        );
-
-        WorkerPromises.push(ImageResizeWorker);
-      });
-
-      res.writeHead(OK, { "Content-Type": "multipart/mixed" });
-
-      Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
-        res.end(JSON.stringify(buffers));
-      });
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "text/plain" });
-      res.end(
-        "An error occurred while processing the request. /handle images",
-        err
-      );
-      throw new FancyError("error while reading images / compress");
-    }
-  }
-
   private async serveMultipleFilesByExtension(
     req: any,
     res: http.ServerResponse,
@@ -349,9 +132,15 @@ export class Server implements ServerInterface {
     if (areImages && pathExists) {
       console.log("files are images");
       if (this.options.compressImages) {
-        this.handleMultipleImagesCompress(res, req, root, 150, 150);
+        this.imageHanlder.handleMultipleImagesCompress(
+          res,
+          req,
+          root,
+          150,
+          150
+        );
       } else {
-        this.handleMultipleImages(res, req, root);
+        this.imageHanlder.handleMultipleImages(res, req, root);
       }
     }
   }
@@ -368,9 +157,9 @@ export class Server implements ServerInterface {
 
     if (isImage && pathExists) {
       if (this.options.compressImages) {
-        this.handleImageCompress(res, req, root, 200, 200);
+        this.imageHanlder.handleImageCompress(res, req, root, 200, 200);
       } else {
-        this.handleImage(res, req, root);
+        this.imageHanlder.handleImage(res, req, root);
       }
     }
   }
@@ -505,7 +294,7 @@ export class Server implements ServerInterface {
   public shutDown() {
     console.log("shutting down...");
     this.server.close(() => {
-      console.log("Server terminated.");
+      console.log(`${this.serverName} terminated.`);
       process.exit(0);
     });
   }

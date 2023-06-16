@@ -1,12 +1,10 @@
 export const DEFAULT_OPTIONS: Options = {
   compressImages: true,
-  serverName: "",
-  port: 3002,
   cacheStatic: true,
   staticFileCacheTime: 60,
+  serverName: "nice server",
   rootDirectory: "/public",
-  compressionResposne: false,
-  compressionThreshold: 0,
+  port: 3002,
 };
 
 export interface Options {
@@ -16,6 +14,4 @@ export interface Options {
   cacheStatic: boolean;
   staticFileCacheTime: number;
   rootDirectory: string;
-  compressionThreshold: number;
-  compressionResposne: boolean;
 }
