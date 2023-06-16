@@ -26,9 +26,10 @@ app.use((req: any, res: http.ServerResponse, next: Function) => {
 
 const auth2 = (req: any, res: http.ServerResponse): void => {
   req.example = "example";
+  console.log("chuuuuuj");
 };
 
-app.get(GET_STATS, getStatsData, [auth2]);
+app.get(GET_STATS, getStatsData, [auth2, auth2]);
 app.get(GET_LEVELS, getLevelData);
 app.post(POST_STATS, sendStatsData);
 app.post(GET_EDITOR_LEVELS, sendLevelData);

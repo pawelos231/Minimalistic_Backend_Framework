@@ -7,7 +7,10 @@ import { processMiddleware } from "./middleware/process";
 import { isRequestTypeValid } from "./helpers/request_type_validation";
 import { CheckIfExistsInType } from "./helpers/TypeCheck";
 import { areFilesInFolderImages } from "./helpers/getFilesInFolder";
-import { STAIC_FILE_TYPES_EXTENSIONS } from "./constants/StaticFileTypes";
+import {
+  STAIC_FILE_TYPES_EXTENSIONS,
+  StaticFiles,
+} from "./constants/StaticFileTypes";
 import {
   POST,
   PUT,
@@ -17,9 +20,7 @@ import {
   NOT_FOUND,
   OK,
 } from "./constants/responseHelpers";
-import { DEFAULT_OPTIONS } from "./constants/serverOpts";
-import { Options } from "./constants/serverOpts";
-import { StaticFiles } from "./constants/StaticFileTypes";
+import { DEFAULT_OPTIONS, Options } from "./constants/serverOpts";
 import { imageTypesArray, ImageTypes } from "./constants/StaticFileTypes";
 import { InMemoryCache } from "./cache/inMemoryCache";
 import { FancyError } from "./exceptions/AugementedError";
@@ -38,7 +39,7 @@ type ServerType = http.Server<
   typeof http.ServerResponse
 >;
 
-const MIDDLEWARE = "middleware";
+const MIDDLEWARE = "MIDDLEWARE";
 
 export class Server implements ServerInterface {
   private routes: Routes = {};
@@ -213,10 +214,9 @@ export class Server implements ServerInterface {
       if (urlMatchesMethodCorrect) {
         const handler: RouteHandler = this.routes[ROUTE][requestMethod];
         const middleware: RouteMiddleware[] = this.routes[ROUTE][MIDDLEWARE];
-
         if (middleware) {
           for (const [key, func] of middleware.entries()) {
-            processMiddleware(func, req, res);
+            await processMiddleware(func, req, res);
           }
         }
 

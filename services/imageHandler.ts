@@ -1,19 +1,19 @@
+import fs from "fs";
 import { promises as fsPromises, constants as fsConstants } from "fs";
+import { promisify } from "util";
+import path from "path";
+import http from "http";
+import sharp from "sharp";
+import { Worker } from "worker_threads";
+
 import { CheckIfExistsInType } from "../helpers/TypeCheck";
-import { imageTypesArray } from "../constants/StaticFileTypes";
 import { INCORRECT_FILE_TYPE } from "../constants/errorMessages";
 import { FancyError } from "../exceptions/AugementedError";
 import { InMemoryCache } from "../cache/inMemoryCache";
 import { Options } from "../constants/serverOpts";
-import fs from "fs";
-import sharp from "sharp";
-import path from "path";
-import http from "http";
 import { OK } from "../constants/responseHelpers";
-import { ImageTypes } from "../constants/StaticFileTypes";
+import { ImageTypes, imageTypesArray } from "../constants/StaticFileTypes";
 import { ImageResizeWorkerData } from "../interfaces/serverInterface";
-import { Worker } from "worker_threads";
-import { promisify } from "util";
 
 type WorkerProps = {
   filePath: string;
