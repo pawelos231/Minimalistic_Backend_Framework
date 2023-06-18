@@ -176,7 +176,8 @@ export class ImageHandler {
         const absolutefilePath: string = path.join(root, req.url, filePath);
         const imageExtension = path.extname(filePath);
 
-        const cacheKey = `optimized:image:multiple${absolutefilePath}:${width}:${height}`;
+        const cacheKey = 
+        `optimized:image:multiple${absolutefilePath}:${width}:${height}`;
 
         const cachedItem = this.memoryCache.get<Promise<Buffer>>(cacheKey);
 

@@ -26,7 +26,6 @@ app.use((req: any, res: http.ServerResponse, next: Function) => {
 
 const auth2 = (req: any, res: http.ServerResponse): void => {
   req.example = "example";
-  console.log("chuuuuuj");
 };
 
 app.get(GET_STATS, getStatsData, [auth2, auth2]);
