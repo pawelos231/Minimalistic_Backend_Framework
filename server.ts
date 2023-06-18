@@ -33,6 +33,14 @@ import {
   ServerInterface,
 } from "./interfaces/serverInterface";
 import { ImageHandler } from "./services/imageHandler";
+import mime from "mime";
+import rangeParser from "range-parser";
+import {
+  matchUrlAndMethod,
+  extractParamsFromUrl,
+  processMiddlewareChain,
+  handle404Page,
+} from "./services/handleRequestFuncs";
 
 type ServerType = http.Server<
   typeof http.IncomingMessage,
@@ -48,7 +56,7 @@ export class Server implements ServerInterface {
   private server = null as ServerType;
   private options: Options = DEFAULT_OPTIONS;
   private memoryCache: InMemoryCache = new InMemoryCache();
-  private imageHanlder: ImageHandler;
+  private imageHandler: ImageHandler;
 
   constructor(options = DEFAULT_OPTIONS) {
     if (options.serverName.length !== 0) {
@@ -60,7 +68,7 @@ export class Server implements ServerInterface {
     this.server.listen(options.port, () => {
       console.log(`listening on port ${options.port}`);
     });
-    this.imageHanlder = new ImageHandler(this.memoryCache, this.options);
+    this.imageHandler = new ImageHandler(this.memoryCache, this.options);
   }
 
   public handleRequesWithMiddleware(req: any, res: http.ServerResponse): void {
@@ -127,13 +135,19 @@ export class Server implements ServerInterface {
     root: string
   ) {
     const absolutePath = path.join(root, req.url);
-    const areImages = areFilesInFolderImages(absolutePath);
     const pathExists = fs.existsSync(absolutePath);
+    const areImages = await areFilesInFolderImages(absolutePath);
 
-    if (areImages && pathExists) {
-      console.log("files are images");
+    if (!pathExists) {
+      res.statusCode = 404;
+      res.end("File Not Found");
+      return;
+    }
+
+    if (areImages) {
+      console.log("Files are images");
       if (this.options.compressImages) {
-        this.imageHanlder.handleMultipleImagesCompress(
+        this.imageHandler.handleMultipleImagesCompress(
           res,
           req,
           root,
@@ -141,7 +155,50 @@ export class Server implements ServerInterface {
           150
         );
       } else {
-        this.imageHanlder.handleMultipleImages(res, req, root);
+        this.imageHandler.handleMultipleImages(res, req, root);
+      }
+    } else {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/plain");
+      res.end("The requested URL is not a file.");
+    }
+  }
+
+  private async handleNonImageStaticFile(
+    req: any,
+    res: http.ServerResponse,
+    path: string
+  ) {
+    try {
+      const stat = fs.statSync(path);
+      const contentType = mime.getType(path) || "application/octet-stream";
+      res.setHeader("Content-Type", contentType);
+
+      const range = req.headers["range"];
+      if (range) {
+        const ranges = rangeParser(stat.size, range);
+        if (ranges && ranges.length === 1) {
+          const { start, end } = ranges[0];
+          res.statusCode = 206;
+          res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+          res.setHeader("Content-Length", end - start + 1);
+          const stream = fs.createReadStream(path, { start, end });
+          stream.pipe(res);
+          return;
+        }
+      }
+
+      res.setHeader("Content-Length", stat.size);
+      const stream = fs.createReadStream(path);
+      stream.pipe(res);
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        res.statusCode = 404;
+        res.end("File Not Found");
+      } else {
+        res.statusCode = 500;
+        res.end("Internal Server Error");
+        console.error("Error serving static file:", error);
       }
     }
   }
@@ -158,10 +215,13 @@ export class Server implements ServerInterface {
 
     if (isImage && pathExists) {
       if (this.options.compressImages) {
-        this.imageHanlder.handleImageCompress(res, req, root, 200, 200);
+        this.imageHandler.handleImageCompress(res, req, root, 200, 200);
       } else {
-        this.imageHanlder.handleImage(res, req, root);
+        this.imageHandler.handleImage(res, req, root);
       }
+    }
+    if (!isImage) {
+      this.handleNonImageStaticFile(req, res, absolutePath);
     }
   }
 
@@ -207,21 +267,22 @@ export class Server implements ServerInterface {
       const parsedRoute: string = parseUrl(ROUTE);
       const requestMethod: string = req.method.toLowerCase();
 
-      const urlMatchesMethodCorrect: boolean =
-        new RegExp(parsedRoute).test(req.url) &&
-        this.routes[ROUTE][requestMethod];
+      const urlMatchesMethodCorrect: boolean = matchUrlAndMethod(
+        req.url,
+        parsedRoute,
+        requestMethod,
+        ROUTE
+      );
 
       if (urlMatchesMethodCorrect) {
         const handler: RouteHandler = this.routes[ROUTE][requestMethod];
         const middleware: RouteMiddleware[] = this.routes[ROUTE][MIDDLEWARE];
+
         if (middleware) {
-          for (const [key, func] of middleware.entries()) {
-            await processMiddleware(func, req, res);
-          }
+          await processMiddlewareChain(middleware, req, res);
         }
 
-        const matcher = req.url.match(new RegExp(parsedRoute));
-        req.params = matcher.groups;
+        req.params = extractParamsFromUrl(req.url, parsedRoute);
         req.body = await this.bodyReader(req);
 
         await handler(req, res);
@@ -232,16 +293,7 @@ export class Server implements ServerInterface {
     }
 
     if (!match) {
-      res.writeHead(NOT_FOUND, { "Content-Type": "text/html" });
-
-      const file: string = fs.readFileSync(
-        path.resolve(__dirname, "views", "404.html"),
-        {
-          encoding: "utf-8",
-        }
-      );
-
-      res.end(file);
+      return handle404Page(res);
     }
 
     res.end();

@@ -16,10 +16,11 @@
   "bugs": {
     "url": "https://github.com/pawelos231/Arkanoid_Backend/issues"
   },
-  
   "homepage": "https://github.com/pawelos231/Arkanoid_Backend#readme",
   "dependencies": {
+    "mime": "^3.0.0",
     "nodemon": "^2.0.20",
+    "range-parser": "^1.2.1",
     "sharp": "^0.32.0",
     "ts-node": "^10.9.1"
   }
