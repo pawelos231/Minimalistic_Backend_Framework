@@ -4,6 +4,7 @@ import path from "path";
 import { levelTransform } from "../helpers/LevelTransform";
 import { Response } from "../../interfaces/wrappers";
 import { Level } from "../interfaces/levelInterface";
+import { tempTabOfSongs } from "../data/Songs";
 
 export const getStatsData = (req: http.IncomingMessage, res: Response) => {
   const temporary: string = JSON.stringify(["siema", "siema1"]);
@@ -108,4 +109,8 @@ export const getLevels = async (req: Request, res: Response) => {
     console.error("Error reading folder:", error);
     res.end(JSON.stringify({ error: "Internal Server Error" }));
   }
+};
+
+export const songsContr = (req: Request, res: Response) => {
+  res.end(JSON.stringify(tempTabOfSongs));
 };

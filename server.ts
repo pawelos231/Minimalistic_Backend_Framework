@@ -271,6 +271,7 @@ export class Server implements ServerInterface {
         req.url,
         parsedRoute,
         requestMethod,
+        this.routes,
         ROUTE
       );
 

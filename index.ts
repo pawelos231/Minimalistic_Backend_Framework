@@ -14,8 +14,10 @@ import {
   GET_LEVELS,
   GET_EDITOR_LEVELS,
   GET_LEVELS_MODIFIED,
+  GET_SONGS,
 } from "./Arkanoid_API/constants/routes";
 import { AllowCors } from "./middleware/cors";
+import { songsContr } from "./Arkanoid_API/controllers/gameData";
 
 const app: Server = new Server();
 
@@ -33,6 +35,7 @@ app.get(GET_LEVELS, getLevelData);
 app.post(POST_STATS, sendStatsData);
 app.post(GET_EDITOR_LEVELS, sendLevelData);
 app.get(GET_LEVELS_MODIFIED, getLevels);
+app.get(GET_SONGS, songsContr);
 
 app.get("/nie", (req: any, res: http.ServerResponse) => {
   const file = fs.readFileSync("./views/index.html", {

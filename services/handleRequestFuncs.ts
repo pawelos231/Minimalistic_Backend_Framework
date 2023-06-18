@@ -1,5 +1,5 @@
 import { processMiddleware } from "../middleware/process";
-import { RouteMiddleware } from "../interfaces/serverInterface";
+import { RouteMiddleware, Routes } from "../interfaces/serverInterface";
 import http from "http";
 import { NOT_FOUND } from "../constants/responseHelpers";
 import path from "path";
@@ -9,9 +9,10 @@ function matchUrlAndMethod(
   url: string,
   parsedRoute: string,
   requestMethod: string,
+  routes: Routes,
   ROUTE: string
 ): boolean {
-  return new RegExp(parsedRoute).test(url) && this.routes[ROUTE][requestMethod];
+  return new RegExp(parsedRoute).test(url) && routes[ROUTE][requestMethod];
 }
 
 function extractParamsFromUrl(url: string, parsedRoute: string): object {
