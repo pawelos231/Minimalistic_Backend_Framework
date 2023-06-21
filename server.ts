@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import { parseUrl } from "./helpers/urlParser";
 import { flatten2DArray } from "./helpers/flatten";
-import { processMiddleware } from "./middleware/process";
 import { isRequestTypeValid } from "./helpers/request_type_validation";
 import { CheckIfExistsInType } from "./helpers/TypeCheck";
 import { areFilesInFolderImages } from "./helpers/getFilesInFolder";
@@ -21,9 +20,8 @@ import {
   OK,
 } from "./constants/responseHelpers";
 import { DEFAULT_OPTIONS, Options } from "./constants/serverOpts";
-import { imageTypesArray, ImageTypes } from "./constants/StaticFileTypes";
+import { imageTypesArray } from "./constants/StaticFileTypes";
 import { InMemoryCache } from "./cache/inMemoryCache";
-import { FancyError } from "./exceptions/AugementedError";
 import {
   ControllerMiddleware,
   RequestType,
