@@ -2,7 +2,7 @@
 
 <p align='center'>
 <br>
-<i><b>[🚧 Work in progress! 🚧]</b></i>
+<i><b>[🚧 framework will receive updates in the future depending on the additional functionalities i would like to implement 🚧]</b></i>
 </p>
 
 The documentation that is presented here offers a comprehensive and elaborate explanation of a custom framework that has been specifically built on top of the Node.js platform. This framework has been designed to provide developers with a powerful and flexible set of tools and functionalities, which can be leveraged for the development of a diverse range of web applications.
