@@ -4,3 +4,4 @@ export const GET_LEVELS = "/getLevelData";
 export const GET_EDITOR_LEVELS = "/sendLevelData";
 export const GET_LEVELS_MODIFIED = "/getLevels";
 export const GET_SONGS = "/getSongs";
+export const GET_BUFFS = "/getBuffs";

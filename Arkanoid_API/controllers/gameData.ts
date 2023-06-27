@@ -5,6 +5,7 @@ import { levelTransform } from "../helpers/LevelTransform";
 import { Response } from "../../interfaces/wrappers";
 import { Level } from "../interfaces/levelInterface";
 import { tempTabOfSongs } from "../data/Songs";
+import { tabOfBuffs } from "../data/Buffs";
 
 export const getStatsData = (req: http.IncomingMessage, res: Response) => {
   const temporary: string = JSON.stringify(["siema", "siema1"]);
@@ -52,18 +53,14 @@ export const sendLevelData = async (req: any, res: Response) => {
   }
 
   const exists = fs.existsSync(filePath);
-
-  if (exists) {
-    console.warn("exists");
-    return res.end(JSON.stringify("level with this name already exists"));
-  }
+  if (exists) return res.end({ error: "level with this name already exists" });
 
   // Write the file
   try {
     fs.readdir(directoryPath, (error, files) => {
       if (error) {
         console.error("Error reading directory:", error);
-        return;
+        return res.end({ error: "Error reading directory" });
       }
 
       fs.writeFileSync(filePath, JSON.stringify(body));
@@ -113,4 +110,8 @@ export const getLevels = async (req: Request, res: Response) => {
 
 export const songsContr = (req: Request, res: Response) => {
   res.end(JSON.stringify(tempTabOfSongs));
+};
+
+export const buffsContr = (req: Request, res: Response) => {
+  res.end(JSON.stringify(tabOfBuffs));
 };
