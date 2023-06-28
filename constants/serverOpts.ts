@@ -3,7 +3,7 @@ export const DEFAULT_OPTIONS: Options = {
   cacheStatic: true,
   staticFileCacheTime: 60,
   serverName: "nice server",
-  rootDirectory: "/public",
+  publicDirectory: "/public",
   port: 3002,
 };
 
@@ -13,5 +13,5 @@ export interface Options {
   serverName: string;
   cacheStatic: boolean;
   staticFileCacheTime: number;
-  rootDirectory: string;
+  publicDirectory: string;
 }

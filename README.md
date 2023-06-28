@@ -53,7 +53,7 @@ DEFAULT_OPTIONS = {
   cacheStatic: true,
   staticFileCacheTime: 60, //cache time in seconds
   serverName: "nice server",
-  rootDirectory: "/public",
+  publicDirectory: "/public",
   port: 3002,
 };
 ```

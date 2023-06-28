@@ -71,7 +71,7 @@ export class Server implements ServerInterface {
 
   public handleRequesWithMiddleware(req: any, res: http.ServerResponse): void {
     let currentMiddlewareIndex: number = 0;
-    if (req.url.startsWith(this.options.rootDirectory)) {
+    if (req.url.startsWith(this.options.publicDirectory)) {
       this.propagateStatic(req, res);
       return;
     }
