@@ -16,8 +16,10 @@ import {
   PATCH,
   DELETE,
   GET,
-  NOT_FOUND,
-  OK,
+  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_OK,
+  HTTP_STATUS_PARTIAL_CONTENT,
+  HTTP_STATUS_RANGE_NOT_SATISFIABLE,
 } from "./constants/responseHelpers";
 import { DEFAULT_OPTIONS, Options } from "./constants/serverOpts";
 import { imageTypesArray } from "./constants/StaticFileTypes";
@@ -156,7 +158,7 @@ export class Server implements ServerInterface {
         this.imageHandler.handleMultipleImages(res, req, root);
       }
     } else {
-      res.statusCode = 200;
+      res.statusCode = HTTP_STATUS_OK;
       res.setHeader("Content-Type", "text/plain");
       res.end("The requested URL is not a file.");
     }
@@ -177,11 +179,16 @@ export class Server implements ServerInterface {
         const ranges = rangeParser(stat.size, range);
         if (ranges && ranges.length === 1) {
           const { start, end } = ranges[0];
-          res.statusCode = 206;
+          res.statusCode = HTTP_STATUS_PARTIAL_CONTENT;
           res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
           res.setHeader("Content-Length", end - start + 1);
           const stream = fs.createReadStream(path, { start, end });
           stream.pipe(res);
+          return;
+        } else {
+          res.statusCode = HTTP_STATUS_RANGE_NOT_SATISFIABLE;
+          res.setHeader("Content-Range", `bytes */${stat.size}`);
+          res.end();
           return;
         }
       }
@@ -244,7 +251,7 @@ export class Server implements ServerInterface {
 
     if (!supportedExtension) {
       console.log("extension is not supported!");
-      res.writeHead(NOT_FOUND, { "Content-Type": "text/plain" });
+      res.writeHead(HTTP_STATUS_NOT_FOUND, { "Content-Type": "text/plain" });
       res.end("404: File not found");
       return;
     }

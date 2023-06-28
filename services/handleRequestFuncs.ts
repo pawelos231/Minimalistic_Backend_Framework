@@ -1,7 +1,7 @@
 import { processMiddleware } from "../middleware/process";
 import { RouteMiddleware, Routes } from "../interfaces/serverInterface";
 import http from "http";
-import { NOT_FOUND } from "../constants/responseHelpers";
+import { HTTP_STATUS_NOT_FOUND } from "../constants/responseHelpers";
 import path from "path";
 import fs from "fs";
 
@@ -31,7 +31,7 @@ async function processMiddlewareChain(
 }
 
 function handle404Page(res: http.ServerResponse): void {
-  res.writeHead(NOT_FOUND, { "Content-Type": "text/html" });
+  res.writeHead(HTTP_STATUS_NOT_FOUND, { "Content-Type": "text/html" });
 
   const file: string = fs.readFileSync(
     path.resolve(__dirname, "views", "404.html"),

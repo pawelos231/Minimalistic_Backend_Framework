@@ -11,7 +11,11 @@ import { INCORRECT_FILE_TYPE } from "../constants/errorMessages";
 import { FancyError } from "../exceptions/AugementedError";
 import { InMemoryCache } from "../cache/inMemoryCache";
 import { Options } from "../constants/serverOpts";
-import { OK } from "../constants/responseHelpers";
+import {
+  HTTP_STATUS_OK,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_NOT_FOUND,
+} from "../constants/responseHelpers";
 import { ImageTypes, imageTypesArray } from "../constants/StaticFileTypes";
 import { ImageResizeWorkerData } from "../interfaces/serverInterface";
 
@@ -51,7 +55,7 @@ export class ImageHandler {
       const filesPaths = await fsPromises.readdir(folderPath);
 
       if (filesPaths.length === 0) {
-        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.writeHead(HTTP_STATUS_NOT_FOUND, { "Content-Type": "text/plain" });
         return res.end("No files found in the folder.");
       }
 
@@ -84,15 +88,17 @@ export class ImageHandler {
       const validFileBuffers = fileBuffers.filter((buffer) => buffer !== null);
 
       if (validFileBuffers.length === 0) {
-        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.writeHead(HTTP_STATUS_NOT_FOUND, { "Content-Type": "text/plain" });
         return res.end("No valid image files found in the folder.");
       }
 
-      res.writeHead(OK, { "Content-Type": "application/json" });
+      res.writeHead(HTTP_STATUS_OK, { "Content-Type": "application/json" });
       res.end(JSON.stringify(validFileBuffers));
     } catch (error) {
       console.error("An error occurred while processing the request.", error);
-      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.writeHead(HTTP_STATUS_INTERNAL_SERVER_ERROR, {
+        "Content-Type": "text/plain",
+      });
       res.end(
         "An error occurred while processing the request. Please try again later."
       );
@@ -130,7 +136,9 @@ export class ImageHandler {
 
     try {
       const buffer = await this.resizeImage(filePath, width, height);
-      res.writeHead(OK, { "Content-Type": `image/${imageExtension.slice(1)}` });
+      res.writeHead(HTTP_STATUS_OK, {
+        "Content-Type": `image/${imageExtension.slice(1)}`,
+      });
       this.memoryCache.set(cacheKey, buffer, this.options.staticFileCacheTime);
       res.end(buffer);
     } catch (err) {
@@ -211,13 +219,15 @@ export class ImageHandler {
         WorkerPromises.push(ImageResizeWorker);
       });
 
-      res.writeHead(OK, { "Content-Type": "multipart/mixed" });
+      res.writeHead(HTTP_STATUS_OK, { "Content-Type": "multipart/mixed" });
 
       await Promise.all(WorkerPromises).then((buffers: Buffer[]) => {
         res.end(JSON.stringify(buffers));
       });
     } catch (err) {
-      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.writeHead(HTTP_STATUS_INTERNAL_SERVER_ERROR, {
+        "Content-Type": "text/plain",
+      });
       res.end(
         "An error occurred while processing the request. /handle images",
         err
