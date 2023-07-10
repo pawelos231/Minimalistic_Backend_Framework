@@ -41,7 +41,7 @@ app.get(GET_SONGS, songsContr);
 app.get(GET_BUFFS, buffsContr);
 
 app.get("/nie", (req: any, res: http.ServerResponse) => {
-  const file = fs.readFileSync("./views/index.html", {
+  const file = fs.readFileSync("./services/views/index.html", {
     encoding: "utf-8",
   });
   res.write(file);

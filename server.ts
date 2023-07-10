@@ -220,7 +220,7 @@ export class Server implements ServerInterface {
 
     if (isImage && pathExists) {
       if (this.options.compressImages) {
-        this.imageHandler.handleImageCompress(res, req, root, 200, 200);
+        this.imageHandler.handleImageCompress(res, req, root, 550, 666);
       } else {
         this.imageHandler.handleImage(res, req, root);
       }
