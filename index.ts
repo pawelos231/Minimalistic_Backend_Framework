@@ -34,11 +34,11 @@ const auth2 = (req: any, res: http.ServerResponse): void => {
 
 app.get(GET_STATS, getStatsData, [auth2, auth2]);
 app.get(GET_LEVELS, getLevelData);
-app.post(POST_STATS, sendStatsData);
-app.post(GET_EDITOR_LEVELS, sendLevelData);
 app.get(GET_LEVELS_MODIFIED, getLevels);
 app.get(GET_SONGS, songsContr);
 app.get(GET_BUFFS, buffsContr);
+app.post(POST_STATS, sendStatsData);
+app.post(GET_EDITOR_LEVELS, sendLevelData);
 
 app.get("/nie", (req: any, res: http.ServerResponse) => {
   const file = fs.readFileSync("./services/views/index.html", {
