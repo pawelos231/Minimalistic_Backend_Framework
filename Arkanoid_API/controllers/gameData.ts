@@ -5,6 +5,7 @@ import { levelTransform } from "../helpers/LevelTransform";
 import { Response } from "../../interfaces/wrappers";
 import { Level } from "../interfaces/levelInterface";
 import { tempTabOfSongs } from "../data/Songs";
+import { tempTabOfSounds } from "../data/Sounds";
 import { tabOfBuffs } from "../data/Buffs";
 
 export const getStatsData = (req: http.IncomingMessage, res: Response) => {
@@ -112,6 +113,9 @@ export const songsContr = (req: Request, res: Response) => {
   res.end(JSON.stringify(tempTabOfSongs));
 };
 
+export const soundContr = (req: Request, res: Response) => {
+  res.end(JSON.stringify(tempTabOfSounds));
+};
 export const buffsContr = (req: Request, res: Response) => {
   res.end(JSON.stringify(tabOfBuffs));
 };

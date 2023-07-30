@@ -35,13 +35,15 @@ export const tabOfBuffs: Buff[] = [
   {
     id: BuffTypes.InvincibilityBuff,
     color: "#ffff00",
-    description: "makes you invincible for about 1 minute",
+    description:
+      "I dont have any idea what this buff should do, for now it is just a showcase",
     pathToImage: "http://localhost:3002/public/buffs/noimage.png",
   },
   {
     id: BuffTypes.DestroyerBuff,
     color: "#FF00FF",
-    description: "makes your ball go through EVERYTHING, broken buff",
+    description:
+      "I dont have any idea what this buff should do, for now it is just a showcase",
     pathToImage: "http://localhost:3002/public/buffs/noimage.png",
   },
 ];
